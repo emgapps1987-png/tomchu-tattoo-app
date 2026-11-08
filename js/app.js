@@ -715,8 +715,40 @@ function playIntro() {
   setTimeout(close, 3000);
 }
 
+// ---------------------------------------------------------------------
+// הוספה למסך הבית (אייפון / אנדרואיד בדפדפן)
+// ---------------------------------------------------------------------
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; showInstallTip(); });
+
+function showInstallTip() {
+  if (isNative || isStandalone || $('#install-tip')) return;
+  let dismissed = false; try { dismissed = localStorage.getItem('tt-install-dismissed') === '1'; } catch (e) { /* ignore */ }
+  if (dismissed || !(isIOS || deferredPrompt)) return;
+  const tip = document.createElement('aside');
+  tip.id = 'install-tip'; tip.className = 'install-tip'; tip.setAttribute('aria-label', 'הוספת האפליקציה למסך הבית');
+  tip.innerHTML = `
+    <img src="assets/icons/apple-touch-icon.png" alt="" width="52" height="52">
+    <div class="install-body">
+      <strong>הוסיפו את Tomchu למסך הבית</strong>
+      ${isIOS
+        ? `<span>לוחצים על <span class="ios-share" aria-label="כפתור השיתוף"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11v9h12v-9"/></svg></span> ואז על <b>"הוספה למסך הבית"</b></span>`
+        : '<span>כמו אפליקציה רגילה – בלחיצה אחת</span>'}
+    </div>
+    ${isIOS ? '' : '<button type="button" class="btn btn-primary btn-small" id="install-go">התקנה</button>'}
+    <button type="button" class="icon-btn install-x" id="install-x" aria-label="סגירה"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
+  document.body.appendChild(tip);
+  $('#install-x').addEventListener('click', () => { tip.remove(); store.set('tt-install-dismissed', '1'); });
+  $('#install-go')?.addEventListener('click', async () => {
+    if (!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice.catch(() => {}); deferredPrompt = null; tip.remove();
+  });
+}
+
 syncTop();
 playIntro();
+setTimeout(showInstallTip, 3800);
 window.addEventListener('hashchange', render);
 render();
 if (!isNative && 'serviceWorker' in navigator && location.protocol === 'https:') {

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>התקנת Tomchu Tattoo</title>
+<meta name="description" content="מוסיפים את האפליקציה של Tomchu Tattoo למסך הבית – בשלושה צעדים.">
+<meta name="theme-color" content="#0B0A0D">
+<meta property="og:title" content="האפליקציה של Tomchu Tattoo">
+<meta property="og:description" content="הוסיפו למסך הבית: פנייה לתום, הצהרת בריאות, מדריך החלמה ועוד">
+<meta property="og:image" content="assets/img/og.jpg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/favicon-48.png" type="image/png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tomchu">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=Rubik:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100dvh; background: #0B0A0D; color: #F4EFF4; font-family: Heebo, Arial, sans-serif; line-height: 1.55;
+    padding: calc(24px + env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom)); }
+  .wrap { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+  h1, h2 { font-family: Rubik, Heebo, sans-serif; margin: 0; line-height: 1.25; }
+  p { margin: 0; }
+  a { color: #E7A8E5; }
+  :focus-visible { outline: 3px solid #8AB4FF; outline-offset: 2px; border-radius: 6px; }
+  .hero { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .app-icon { width: 104px; height: 104px; border-radius: 24px; box-shadow: 0 10px 34px rgba(160,23,156,.35); }
+  .hero h1 { font-size: 1.6rem; }
+  .muted { color: #B3A8B6; }
+  .feathers { display: flex; gap: 6px; } .feathers span { width: 28px; height: 6px; border-radius: 3px; }
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; border-radius: 999px; background: #17141A; border: 1px solid #2C2530; }
+  .tabs button { min-height: 44px; border: 0; border-radius: 999px; background: none; color: #B3A8B6; font: inherit; font-weight: 700; cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: #D97AD6; color: #2A0628; }
+  .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  .steps li { display: flex; gap: 14px; align-items: flex-start; background: #17141A; border: 1px solid #2C2530; border-radius: 18px; padding: 14px; }
+  .n { width: 34px; height: 34px; border-radius: 50%; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .steps b { display: block; font-size: 1.02rem; }
+  .key { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 8px; background: #2B2730; border: 1px solid #4A3F50; margin: 0 2px; font-weight: 700; }
+  .key svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .btn { min-height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; font-size: 1.05rem; text-decoration: none; border: 0; cursor: pointer; font-family: inherit; width: 100%; }
+  .btn-primary { background: #D97AD6; color: #2A0628; }
+  .btn-outline { background: #10301F; color: #C9F2DA; border: 1.5px solid #22A55B; font-size: 1rem; min-height: 52px; }
+  .note { font-size: .9rem; color: #B3A8B6; text-align: center; }
+  .done { display: none; text-align: center; background: #10301F; border: 1px solid #22A55B; border-radius: 18px; padding: 18px; }
+  .standalone .done { display: block; } .standalone .howto { display: none; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="hero">
+    <img class="app-icon" src="assets/icons/icon-512.png" alt="האייקון של Tomchu Tattoo">
+    <span class="feathers" aria-hidden="true"><span style="background:#D41A5E"></span><span style="background:#5B4BC4"></span><span style="background:#1D93B5"></span><span style="background:#22A55B"></span></span>
+    <h1>האפליקציה של Tomchu Tattoo</h1>
+    <p class="muted">פנייה לתום, הצהרת בריאות, מדריך החלמה והעבודות – הכל באייקון אחד על מסך הבית.</p>
+  </div>
+
+  <div class="done" role="status">
+    <h2 style="font-size:1.15rem;margin-bottom:6px">האפליקציה כבר מותקנת אצלך</h2>
+    <a class="btn btn-primary" href="./#/home">פתיחת האפליקציה</a>
+  </div>
+
+  <section class="howto" aria-labelledby="how-h" style="display:flex;flex-direction:column;gap:16px">
+    <h2 id="how-h" style="font-size:1.2rem">איך מוסיפים למסך הבית?</h2>
+    <div class="tabs" role="tablist" aria-label="סוג הטלפון">
+      <button type="button" role="tab" id="t-ios" aria-controls="p-ios" aria-selected="true">אייפון</button>
+      <button type="button" role="tab" id="t-and" aria-controls="p-and" aria-selected="false">אנדרואיד</button>
+    </div>
+
+    <div role="tabpanel" id="p-ios" aria-labelledby="t-ios">
+      <ol class="steps">
+        <li><span class="n" style="background:#D41A5E">1</span><div><b>פותחים את הדף ב־Safari</b><span class="muted">אם הקישור נפתח מתוך וואטסאפ – לוחצים על <span class="key" aria-label="שלוש נקודות">⋯</span> ובוחרים "פתח ב־Safari".</span></div></li>
+        <li><span class="n" style="background:#5B4BC4">2</span><div><b>לוחצים על כפתור השיתוף</b><span class="muted">הריבוע עם החץ <span class="key" aria-label="כפתור השיתוף"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11v9h12v-9"/></svg></span> – בתחתית המסך או ליד שורת הכתובת.</span></div></li>
+        <li><span class="n" style="background:#1D93B5">3</span><div><b>בוחרים "הוספה למסך הבית"</b><span class="muted">גוללים קצת למטה ברשימה <span class="key" aria-label="סימן פלוס"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg></span>, ואז לוחצים "הוסף" למעלה.</span></div></li>
+        <li><span class="n" style="background:#22A55B">4</span><div><b>זהו!</b><span class="muted">האייקון של היונק מופיע במסך הבית, והאפליקציה נפתחת במסך מלא – בדיוק כמו אפליקציה רגילה.</span></div></li>
+      </ol>
+    </div>
+
+    <div role="tabpanel" id="p-and" aria-labelledby="t-and" hidden>
+      <button type="button" class="btn btn-primary" id="and-install" hidden>התקנה בלחיצה אחת</button>
+      <ol class="steps" id="and-steps" style="margin-top:12px">
+        <li><span class="n" style="background:#D41A5E">1</span><div><b>פותחים את הדף ב־Chrome</b><span class="muted">אם הקישור נפתח מתוך וואטסאפ – לוחצים על <span class="key" aria-label="שלוש נקודות">⋮</span> ובוחרים "פתח ב־Chrome".</span></div></li>
+        <li><span class="n" style="background:#5B4BC4">2</span><div><b>לוחצים על <span class="key" aria-label="שלוש נקודות">⋮</span> למעלה</b><span class="muted">התפריט בפינה של שורת הכתובת.</span></div></li>
+        <li><span class="n" style="background:#1D93B5">3</span><div><b>בוחרים "התקנת אפליקציה"</b><span class="muted">או "הוספה למסך הבית", ומאשרים.</span></div></li>
+      </ol>
+    </div>
+
+    <p class="note">חינם, בלי חנות אפליקציות ובלי הרשמה.</p>
+  </section>
+
+  <a class="btn btn-outline" href="./#/home">או פשוט להיכנס לאפליקציה מכאן</a>
+</main>
+<script>
+  (function () {
+    var ua = navigator.userAgent;
+    var isIOS = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var isAndroid = /android/i.test(ua);
+    var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+    if (standalone) document.body.classList.add('standalone');
+    var tabs = { ios: document.getElementById('t-ios'), and: document.getElementById('t-and') };
+    var panels = { ios: document.getElementById('p-ios'), and: document.getElementById('p-and') };
+    function pick(k) {
+      Object.keys(tabs).forEach(function (x) {
+        tabs[x].setAttribute('aria-selected', String(x === k)); tabs[x].tabIndex = x === k ? 0 : -1; panels[x].hidden = x !== k;
+      });
+    }
+    tabs.ios.addEventListener('click', function () { pick('ios'); });
+    tabs.and.addEventListener('click', function () { pick('and'); });
+    document.querySelector('[role=tablist]').addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { var k = tabs.ios.getAttribute('aria-selected') === 'true' ? 'and' : 'ios'; pick(k); tabs[k].focus(); }
+    });
+    pick(isAndroid && !isIOS ? 'and' : 'ios');
+    var deferred = null; var btn = document.getElementById('and-install');
+    window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; btn.hidden = false; });
+    btn.addEventListener('click', function () { if (!deferred) return; deferred.prompt(); deferred = null; btn.hidden = true; });
+    if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(function () {});
+  })();
+</script>
+</body>
+</html>

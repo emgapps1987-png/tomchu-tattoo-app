@@ -285,3 +285,15 @@ h2.barred::before { content: ""; width: 6px; height: 18px; border-radius: 3px; b
 .tabbar .ti { display: inline-flex; padding: 3px 14px; border-radius: 999px; color: var(--tab); }
 .tabbar a[aria-current="page"] { color: var(--ink); }
 .tabbar a[aria-current="page"] .ti { background: #D97AD6; color: #2A0628; }
+
+/* ===== הוספה למסך הבית ===== */
+.install-tip { position: fixed; z-index: 30; inset-inline: 12px; bottom: calc(84px + env(safe-area-inset-bottom)); max-width: 536px; margin: 0 auto;
+  display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 20px; background: #211A26; border: 1px solid #5B4BC4;
+  box-shadow: 0 12px 32px rgba(0,0,0,.55); animation: tip-in .35s ease-out; }
+@keyframes tip-in { from { transform: translateY(20px); opacity: 0 } to { transform: none; opacity: 1 } }
+.install-tip img { width: 52px; height: 52px; border-radius: 12px; flex-shrink: 0; }
+.install-body { flex: 1; display: flex; flex-direction: column; gap: 2px; font-size: .9rem; line-height: 1.45; }
+.install-body strong { font-size: .98rem; }
+.ios-share { display: inline-flex; vertical-align: middle; width: 24px; height: 24px; border-radius: 6px; background: #1D93B5; color: #fff; align-items: center; justify-content: center; }
+.ios-share svg { width: 16px; height: 16px; }
+.install-x { width: 40px; height: 40px; flex-shrink: 0; }
