@@ -300,11 +300,11 @@ views.health = () => {
 
   <div class="stack-lg" data-step="2" hidden>
     ${QUESTIONS.map((q) => `
-    <fieldset class="q" id="fs-${q.id}"><legend class="legend" style="float:right;width:100%;margin-bottom:10px">${esc(q.text)}</legend>
+    <div class="q" id="fs-${q.id}" role="radiogroup" aria-labelledby="ql-${q.id}"><p class="legend" id="ql-${q.id}" style="margin:0">${esc(q.text)}</p>
       <div class="pills">
         <label class="pill"><input type="radio" name="${q.id}" value="לא"><span>לא</span></label>
         <label class="pill"><input type="radio" name="${q.id}" value="כן"><span>כן</span></label>
-      </div></fieldset>`).join('')}
+      </div></div>`).join('')}
     <div class="field"><label for="h-details">פירוט (חובה אם סימנת "כן")</label><textarea id="h-details" name="details" class="fld" rows="3" aria-describedby="h-q-err"></textarea></div>
     <span class="err" id="h-q-err"></span>
   </div>

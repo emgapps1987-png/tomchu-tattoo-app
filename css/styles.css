@@ -187,7 +187,14 @@ details.faq p { padding-bottom: 14px; color: var(--muted); }
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field > label, .legend { font-weight: 500; }
 .req { color: var(--pri); }
-.fld { width: 100%; min-height: 48px; padding: 12px 14px; border: 1.5px solid var(--fline); border-radius: 12px; background: var(--surface); color: var(--ink); }
+.fld { width: 100%; min-height: 48px; min-width: 0; max-width: 100%; font-size: 16px; -webkit-appearance: none; appearance: none; padding: 12px 14px; border: 1.5px solid var(--fline); border-radius: 12px; background: var(--surface); color: var(--ink); }
+/* אייפון: שדות תאריך ובחירה מקבלים רוחב וגובה אחידים */
+input.fld, select.fld { height: 52px; }
+.fld[type="date"] { display: block; line-height: 22px; text-align: right; }
+.fld[type="date"]::-webkit-date-and-time-value { text-align: right; min-height: 22px; }
+.fld[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: .7; }
+select.fld { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23B3A8B6' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: left 14px center; padding-left: 36px; }
+.grid2 > * { min-width: 0; }
 .fld:focus { border-color: var(--pri); outline: none; box-shadow: 0 0 0 3px var(--pri-soft); }
 .fld::placeholder { color: var(--muted); }
 .fld[aria-invalid="true"] { border-color: var(--danger); }
