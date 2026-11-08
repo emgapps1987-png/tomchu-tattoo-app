@@ -10,6 +10,16 @@ const store = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* פרטי/חסום – לא נורא */ } }
 };
+// באפליקציית אנדרואיד (Capacitor) קישורים חיצוניים נפתחים באפליקציה המתאימה (וואטסאפ, Waze, דפדפן)
+const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const openExternal = (url) => { if (isNative) location.href = url; else window.open(url, '_blank', 'noopener'); };
+if (isNative) {
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href]'); if (!a) return;
+    const href = a.getAttribute('href');
+    if (/^(https?:|tel:|mailto:)/.test(href)) { e.preventDefault(); location.href = href; }
+  });
+}
 const waLink = (text) => `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(text)}`;
 const fmtDate = (iso) => { if (!iso) return ''; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
 const nowStamp = () => new Date().toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' });
@@ -328,10 +338,10 @@ views.done = (kind) => {
 <section class="screen done" aria-labelledby="h">
   <img class="logo-light" src="assets/img/logo-light.png" alt=""><img class="logo-dark" src="assets/img/logo-dark.png" alt="">
   <h1 id="h">ההצהרה מוכנה – תודה!</h1>
-  <p class="muted">${CONFIG.healthEndpoint ? 'ההצהרה נשלחה לתום. נתראה בסטודיו!' : 'עוד צעד אחד: שלחו את ההצהרה לתום. אפשר לשלוח סיכום בוואטסאפ, ולשמור עותק חתום כ־PDF.'}</p>
+  <p class="muted">${CONFIG.healthEndpoint ? 'ההצהרה נשלחה לתום. נתראה בסטודיו!' : isNative ? 'עוד צעד אחד: שלחו את הסיכום לתום בוואטסאפ.' : 'עוד צעד אחד: שלחו את ההצהרה לתום. אפשר לשלוח סיכום בוואטסאפ, ולשמור עותק חתום כ־PDF.'}</p>
   ${state.lastHealth && !CONFIG.healthEndpoint ? `
   <a class="btn btn-primary" href="${waLink(healthSummary(state.lastHealth))}" target="_blank" rel="noopener">שליחת הסיכום לתום בוואטסאפ</a>
-  <button type="button" class="btn btn-outline" id="print-health">שמירה / הדפסה כ־PDF (עם החתימה)</button>` : ''}
+  ${isNative ? '' : '<button type="button" class="btn btn-outline" id="print-health">שמירה / הדפסה כ־PDF (עם החתימה)</button>'}` : ''}
   <a class="btn btn-outline" href="#/home">חזרה לבית</a>
 </section>`;
   }
@@ -441,7 +451,7 @@ binders.contact = () => {
       navigator.share({ text, files }).then(() => { state.contact = {}; location.hash = '#/done/contact'; }).catch(() => {});
       return;
     }
-    window.open(waLink(files.length ? text + '\n(אשלח תמונות השראה כאן בצ׳אט)' : text), '_blank', 'noopener');
+    openExternal(waLink(files.length ? text + '\n(אשלח תמונות השראה כאן בצ׳אט)' : text));
     state.contact = {};
     location.hash = '#/done/contact';
   });
@@ -681,6 +691,6 @@ $('#text-btn').addEventListener('click', () => {
 syncTop();
 window.addEventListener('hashchange', render);
 render();
-if ('serviceWorker' in navigator && location.protocol === 'https:') {
+if (!isNative && 'serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }

@@ -1,0 +1,9 @@
+{
+  "appId": "com.tomchutattoo.app",
+  "appName": "Tomchu Tattoo",
+  "webDir": "www",
+  "backgroundColor": "#0B0A0D",
+  "android": {
+    "allowMixedContent": false
+  }
+}
