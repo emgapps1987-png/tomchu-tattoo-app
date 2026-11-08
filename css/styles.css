@@ -39,6 +39,7 @@ a { color: var(--vio); }
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
 svg { width: 1.4em; height: 1.4em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+[hidden] { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .skip { position: absolute; top: -60px; right: 12px; z-index: 50; background: var(--pri); color: var(--onpri); padding: 10px 16px; border-radius: 10px; }
 .skip:focus { top: 8px; }

@@ -182,7 +182,7 @@ views.about = () => `
     <a class="btn btn-small btn-outline" href="${CONFIG.facebook}" target="_blank" rel="noopener">Facebook</a>
     <a class="btn btn-small btn-outline" href="${CONFIG.tiktok}" target="_blank" rel="noopener">TikTok</a>
   </div>
-  <p style="text-align:center"><a href="#/accessibility">הצהרת נגישות</a></p>
+  <p style="text-align:center"><a href="#/accessibility">הצהרת נגישות</a> · <a href="privacy.html">מדיניות פרטיות</a></p>
 </section>`;
 
 views.gallery = () => {

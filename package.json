@@ -4,7 +4,7 @@
   "private": true,
   "description": "Tomchu Tattoo – client app (web + Android)",
   "scripts": {
-    "build:web": "rm -rf www && mkdir www && cp -r index.html install.html css js assets manifest.webmanifest sw.js www/"
+    "build:web": "rm -rf www && mkdir www && cp -r index.html install.html privacy.html css js assets manifest.webmanifest sw.js www/"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.0",
