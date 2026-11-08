@@ -674,7 +674,7 @@ function syncTop() {
   $('#theme-btn').setAttribute('aria-label', dark ? 'מעבר למצב בהיר' : 'מעבר למצב כהה');
   const big = root.classList.contains('big-text');
   $('#text-btn').setAttribute('aria-pressed', String(big));
-  $('#text-btn span').textContent = big ? 'טקסט רגיל' : 'טקסט גדול';
+  $('#text-btn').setAttribute('aria-label', big ? 'הקטנת טקסט' : 'הגדלת טקסט');
   document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', dark ? '#0B0A0D' : '#FAF6F3'));
 }
 $('#theme-btn').addEventListener('click', () => {
@@ -688,7 +688,39 @@ $('#text-btn').addEventListener('click', () => {
 // ---------------------------------------------------------------------
 // הפעלה
 // ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+// אנימציית פתיחה – דיו במים (פעם אחת בכל פתיחה, נסגרת לבד או בהקשה)
+// ---------------------------------------------------------------------
+function playIntro() {
+  const intro = $('#intro');
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let seen = false; try { seen = sessionStorage.getItem('tt-intro') === '1'; } catch (e) { /* ignore */ }
+  if (!intro || reduce || seen) { intro?.remove(); return; }
+  try { sessionStorage.setItem('tt-intro', '1'); } catch (e) { /* ignore */ }
+  const G = '#22A55B', T = '#1D93B5', V = '#5B4BC4', M = '#D41A5E', P = '#A0179C';
+  const shapes = ['58% 42% 63% 37% / 45% 58% 42% 55%', '42% 58% 37% 63% / 60% 40% 60% 40%', '50% 50% 30% 70% / 70% 40% 60% 30%'];
+  const blooms = [
+    [10, 'a', 150, 150, M, 0.5], [130, 'a', 160, 140, P, 0.6], [250, 'a', 150, 160, V, 0.7],
+    [60, 'b', 170, 150, T, 0.75], [180, 'b', 160, 170, G, 0.85], [300, 'b', 170, 160, M, 0.95],
+    [30, 'c', 70, 190, G, 0.9], [100, 'c', 60, 170, V, 1.0], [165, 'c', 75, 200, T, 1.05],
+    [225, 'c', 65, 180, P, 1.1], [290, 'c', 70, 190, M, 1.15], [345, 'c', 60, 170, T, 1.2]
+  ];
+  $('#ib-ink').innerHTML = blooms.map((b, i) => `<span class="ib-arm" style="transform:rotate(${b[0]}deg)"><span class="ib-bloom ib-${b[1]}" style="width:${b[2]}px;height:${b[3]}px;background:${b[4]};border-radius:${shapes[i % 3]};animation-delay:${b[5]}s"></span></span>`).join('');
+  intro.hidden = false;
+  document.body.classList.add('intro-on');
+  let closed = false;
+  const close = () => {
+    if (closed) return; closed = true;
+    intro.classList.add('out');
+    document.body.classList.remove('intro-on');
+    setTimeout(() => intro.remove(), 600);
+  };
+  intro.addEventListener('click', close);
+  setTimeout(close, 3000);
+}
+
 syncTop();
+playIntro();
 window.addEventListener('hashchange', render);
 render();
 if (!isNative && 'serviceWorker' in navigator && location.protocol === 'https:') {

@@ -51,8 +51,10 @@ svg { width: 1.4em; height: 1.4em; fill: none; stroke: currentColor; stroke-widt
   padding: calc(8px + env(safe-area-inset-top)) 12px 8px; background: var(--bg); border-bottom: 1px solid var(--line);
 }
 .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--ink); min-height: 44px; }
-.brand img { width: 40px; height: 44px; object-fit: contain; }
-.brand span { font-family: Rubik, sans-serif; font-weight: 700; font-size: 17px; direction: ltr; white-space: nowrap; }
+.brand img { width: 34px; height: 38px; object-fit: contain; }
+.brand span { font-family: Rubik, sans-serif; font-weight: 500; font-size: 14px; letter-spacing: 0.04em; direction: ltr; white-space: nowrap; }
+.aplus span { font-family: Rubik, sans-serif; font-weight: 700; font-size: 15px; direction: ltr; }
+.aplus[aria-pressed="true"] { background: var(--pri-soft); border-color: var(--pri); }
 [data-theme="light"] .logo-dark, [data-theme="dark"] .logo-light { display: none; }
 .top-actions { display: flex; gap: 6px; }
 .icon-btn { width: 44px; height: 44px; border-radius: 999px; border: 1.5px solid var(--fline); background: var(--surface); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -231,3 +233,24 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
   #print-area .sig { height: 90pt; border: 1px solid #999; }
   @page { margin: 14mm; }
 }
+
+/* ===== אנימציית פתיחה – דיו במים ===== */
+#intro { position: fixed; inset: 0; z-index: 100; background: #0B0A0D; overflow: hidden; transition: opacity .55s ease; cursor: pointer; }
+#intro.out { opacity: 0; pointer-events: none; }
+body.intro-on { overflow: hidden; }
+#intro .ib-drop { position: absolute; left: 50%; top: -30px; width: 16px; height: 22px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #D41A5E; transform: translateX(-50%); animation: ib-fall .5s cubic-bezier(.55,0,1,.45) forwards; }
+@keyframes ib-fall { 0% { top: -30px; opacity: 1 } 92% { opacity: 1 } 100% { top: calc(45% - 10px); opacity: 0 } }
+#intro .ib-ring { position: absolute; left: 50%; top: 45%; width: 40px; height: 40px; border-radius: 50%; border: 2px solid #F0B8EE; transform: translate(-50%,-50%) scale(0); opacity: 0; animation: ib-ring 1.1s ease-out forwards; }
+@keyframes ib-ring { 0% { opacity: .9; transform: translate(-50%,-50%) scale(0) } 100% { opacity: 0; transform: translate(-50%,-50%) scale(9) } }
+#intro .ib-ink { position: absolute; left: 50%; top: 45%; width: 0; height: 0; animation: ib-swirl 9s ease-in-out 2s infinite alternate; }
+#intro .ib-arm { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+#intro .ib-bloom { position: absolute; left: 0; top: 0; opacity: 0; filter: blur(18px); mix-blend-mode: screen; transform: translate(-50%,-50%) scale(.05); animation-duration: 2.6s; animation-timing-function: cubic-bezier(.16,.8,.3,1); animation-fill-mode: forwards; }
+#intro .ib-a { animation-name: ib-a } #intro .ib-b { animation-name: ib-b } #intro .ib-c { animation-name: ib-c }
+@keyframes ib-a { 0% { opacity: 0; transform: translate(-50%,-50%) translateY(0) scale(.05) } 20% { opacity: .95 } 100% { opacity: .85; transform: translate(-50%,-50%) translateY(-60px) scale(1) } }
+@keyframes ib-b { 0% { opacity: 0; transform: translate(-50%,-50%) translateY(0) scale(.05) } 20% { opacity: .95 } 100% { opacity: .8; transform: translate(-50%,-50%) translateY(-135px) scale(1) } }
+@keyframes ib-c { 0% { opacity: 0; transform: translate(-50%,-50%) translateY(0) scale(.05) rotate(0deg) } 25% { opacity: .9 } 100% { opacity: .75; transform: translate(-50%,-50%) translateY(-210px) scale(1) rotate(35deg) } }
+#intro .ib-disc { position: absolute; left: 50%; top: 45%; width: 226px; height: 226px; border-radius: 50%; background: #0B0A0D; box-shadow: 0 0 40px 22px #0B0A0D; transform: translate(-50%,-50%); opacity: 0; animation: ib-fade 1.2s ease-out 1.15s forwards; }
+#intro .ib-logo { position: absolute; left: 50%; top: 45%; width: 250px; max-width: 64vw; height: auto; transform: translate(-50%,-50%); opacity: 0; filter: blur(8px); animation: ib-logo 1.3s ease-out 1.25s forwards; }
+@keyframes ib-fade { to { opacity: 1 } }
+@keyframes ib-logo { to { opacity: 1; filter: blur(0) } }
+@keyframes ib-swirl { from { transform: rotate(0deg) scale(1) } to { transform: rotate(-14deg) scale(1.08) } }
