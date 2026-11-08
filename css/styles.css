@@ -55,7 +55,7 @@ svg { width: 1.4em; height: 1.4em; fill: none; stroke: currentColor; stroke-widt
 .brand span { font-family: Rubik, sans-serif; font-weight: 500; font-size: 14px; letter-spacing: 0.04em; direction: ltr; white-space: nowrap; }
 .aplus span { font-family: Rubik, sans-serif; font-weight: 700; font-size: 15px; direction: ltr; }
 .aplus[aria-pressed="true"] { background: var(--pri-soft); border-color: var(--pri); }
-[data-theme="light"] .logo-dark, [data-theme="dark"] .logo-light { display: none; }
+.logo-light { display: none; }
 .top-actions { display: flex; gap: 6px; }
 .icon-btn { width: 44px; height: 44px; border-radius: 999px; border: 1.5px solid var(--fline); background: var(--surface); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 .icon-btn svg { width: 20px; height: 20px; }
@@ -254,3 +254,34 @@ body.intro-on { overflow: hidden; }
 @keyframes ib-fade { to { opacity: 1 } }
 @keyframes ib-logo { to { opacity: 1; filter: blur(0) } }
 @keyframes ib-swirl { from { transform: rotate(0deg) scale(1) } to { transform: rotate(-14deg) scale(1.08) } }
+
+/* ===== צבעי היונק – רמה 2 ===== */
+.btn-tint { font-weight: 700; border-width: 1.5px; }
+.btn-tint .chip { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; }
+.btn-tint .chip svg { width: 15px; height: 15px; stroke-width: 2.4; }
+.tint-teal { background: #0E2C38; border-color: #1D93B5; color: #CDEFF9; }
+.tint-teal .chip { background: #1D93B5; }
+.tint-green { background: #10301F; border-color: #22A55B; color: #C9F2DA; }
+.tint-green .chip { background: #22A55B; }
+.care-card { border-color: #5B4BC4; }
+.care-card::before { border-color: #5B4BC4; }
+.care-kicker { color: #7FE3C8; }
+.timeline-mini i:nth-of-type(1) { background: #D41A5E; border-color: #D41A5E; }
+.timeline-mini i:nth-of-type(2) { border-color: #5B4BC4; }
+.timeline-mini i:nth-of-type(3) { border-color: #1D93B5; }
+.how { border-color: #3A3150; }
+.how-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; color: #D9CFE0; }
+.how-list li { display: flex; align-items: center; gap: 10px; }
+.how-list .n { width: 26px; height: 26px; border-radius: 50%; color: #fff; font-weight: 700; font-size: 0.82rem; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.meet { border-color: #6B2140; }
+h2.barred { display: flex; align-items: center; gap: 8px; }
+h2.barred::before { content: ""; width: 6px; height: 18px; border-radius: 3px; background: var(--bar); }
+.thumb-btn.framed { border: 2px solid var(--frame); }
+.art-card.topped { border-top: 4px solid var(--top); }
+.btn-waze { background: #1D93B5; color: #fff; border-color: #1D93B5; }
+
+/* תפריט תחתון צבעוני */
+.tabbar a { color: var(--muted); }
+.tabbar .ti { display: inline-flex; padding: 3px 14px; border-radius: 999px; color: var(--tab); }
+.tabbar a[aria-current="page"] { color: var(--ink); }
+.tabbar a[aria-current="page"] .ti { background: #D97AD6; color: #2A0628; }

@@ -1,9 +1,9 @@
 // Service worker – עבודה גם בלי אינטרנט.
 // אחרי כל שינוי בקבצים כדאי להעלות את מספר הגרסה כדי שהטלפונים יקבלו את העדכון.
-const VERSION = 'tomchu-v2';
+const VERSION = 'tomchu-v3';
 const CORE = [
   './', 'index.html', 'css/styles.css', 'js/app.js', 'js/content.js', 'manifest.webmanifest',
-  'assets/img/logo-light.png', 'assets/img/logo-dark.png', 'assets/img/tom-studio.jpg',
+  'assets/img/logo-dark.png', 'assets/img/tom-studio.jpg',
   'assets/icons/icon-192.png', 'assets/icons/favicon-48.png'
 ];
 

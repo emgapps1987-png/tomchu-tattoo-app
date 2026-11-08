@@ -39,6 +39,13 @@ const validIsraeliId = (v) => {
 };
 const validPhone = (v) => /^(?:0|\+?972-?)5\d-?\d{3}-?\d{4}$|^0\d{1,2}-?\d{7}$/.test(String(v || '').replace(/\s/g, ''));
 const announce = (msg) => { const l = $('#live'); l.textContent = ''; setTimeout(() => { l.textContent = msg; }, 50); };
+// צבעי היונק (רמה 2)
+const FEATHER = [
+  { c: '#D41A5E', soft: '#3A1527', light: '#FFB3CE' },
+  { c: '#5B4BC4', soft: '#221F45', light: '#C9C2FF' },
+  { c: '#1D93B5', soft: '#0E2C38', light: '#9EDDF0' },
+  { c: '#22A55B', soft: '#10301F', light: '#9FE8BE' }
+];
 const icon = {
   back: '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',
   fwd: '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>',
@@ -69,7 +76,6 @@ const views = {};
 views.home = () => `
 <section class="screen" aria-labelledby="h">
   <div class="hero">
-    <img class="logo-light" src="assets/img/logo-light.png" alt="הלוגו של Tomchu Tattoo – יונק דבש צבעוני">
     <img class="logo-dark" src="assets/img/logo-dark.png" alt="הלוגו של Tomchu Tattoo – יונק דבש צבעוני">
     <span class="feathers" aria-hidden="true"><span style="background:#22A55B"></span><span style="background:#1D93B5"></span><span style="background:#5B4BC4"></span><span style="background:#D41A5E"></span></span>
     <div class="stack">
@@ -81,8 +87,8 @@ views.home = () => `
   <div class="stack" style="gap:10px">
     <a class="btn btn-primary" href="#/contact">${icon.pen} רוצה קעקוע – בואו נדבר</a>
     <div class="grid2">
-      <a class="btn btn-outline" href="#/health">הצהרת בריאות</a>
-      <a class="btn btn-outline" href="https://wa.me/${CONFIG.whatsapp}" target="_blank" rel="noopener">וואטסאפ לתום</a>
+      <a class="btn btn-tint tint-teal" href="#/health"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M12 10v6M9 13h6"/></svg></span>הצהרת בריאות</a>
+      <a class="btn btn-tint tint-green" href="https://wa.me/${CONFIG.whatsapp}" target="_blank" rel="noopener"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"/></svg></span>וואטסאפ לתום</a>
     </div>
   </div>
 
@@ -98,13 +104,10 @@ views.home = () => `
     <span style="display:flex;align-items:center;gap:6px;font-weight:700">לפתיחת המדריך ${icon.fwd}</span>
   </a>
 
-  <div class="card stack">
+  <div class="card stack how">
     <h2>איך זה עובד?</h2>
-    <ol class="muted" style="margin:0;padding-inline-start:20px;display:flex;flex-direction:column;gap:4px">
-      <li>שולחים פנייה עם הרעיון שלכם</li>
-      <li>נפגשים לקפה ומעצבים יחד סקיצה אישית</li>
-      <li>ממלאים הצהרת בריאות לפני התור</li>
-      <li>מתקעקעים – בלי לחץ של זמן</li>
+    <ol class="how-list">
+      ${['שולחים פנייה עם הרעיון שלכם', 'נפגשים לקפה ומעצבים יחד סקיצה אישית', 'ממלאים הצהרת בריאות לפני התור', 'מתקעקעים – בלי לחץ של זמן'].map((t, i) => `<li><span class="n" style="background:${FEATHER[i].c}" aria-hidden="true">${i + 1}</span>${t}</li>`).join('')}
     </ol>
   </div>
 
@@ -113,21 +116,21 @@ views.home = () => `
     <span class="stack" style="gap:2px;flex:1">
       <span style="font-family:Rubik,sans-serif;font-weight:700;font-size:1.1rem">היי, אני תום</span>
       <span class="muted" style="font-size:.9rem">אמנית, אמא, ומקעקעת עם נשמה</span>
-      <span style="color:var(--vio);font-weight:700;font-size:.9rem">להכיר אותי</span>
+      <span style="color:#7FE3C8;font-weight:700;font-size:.9rem">להכיר אותי</span>
     </span>
   </a>
 
   <div class="stack" style="gap:10px">
-    <div class="section-head"><h2>מהעבודות שלי</h2><a class="link-btn" href="#/gallery">לכל העבודות</a></div>
+    <div class="section-head"><h2 class="barred" style="--bar:#1D93B5">מהעבודות שלי</h2><a class="link-btn" href="#/gallery">לכל העבודות</a></div>
     <ul class="hscroll">
-      ${WORKS.slice(0, 6).map((w) => `<li style="flex:0 0 140px"><button type="button" class="thumb-btn" data-photo="${w.id}" style="width:140px;height:175px" aria-label="${esc(w.alt)} – להגדלה"><img src="${w.src}" alt="" loading="lazy"></button></li>`).join('')}
+      ${WORKS.slice(0, 6).map((w, i) => `<li style="flex:0 0 140px"><button type="button" class="thumb-btn framed" data-photo="${w.id}" style="width:140px;height:175px;--frame:${FEATHER[i % 4].c}" aria-label="${esc(w.alt)} – להגדלה"><img src="${w.src}" alt="" loading="lazy"></button></li>`).join('')}
     </ul>
   </div>
 
   <div class="stack" style="gap:10px">
-    <div class="section-head"><h2>מאמרים</h2><a class="link-btn" href="#/articles">לכל המאמרים</a></div>
+    <div class="section-head"><h2 class="barred" style="--bar:#D41A5E">מאמרים</h2><a class="link-btn" href="#/articles">לכל המאמרים</a></div>
     <ul class="hscroll">
-      ${ARTICLES.map((a) => `<li style="flex:0 0 230px;display:flex"><a class="art-card" href="#/article/${a.id}"><span class="tag">${esc(a.tag)}</span><span style="font-weight:700;line-height:1.35">${esc(a.title)}</span></a></li>`).join('')}
+      ${ARTICLES.map((a, i) => `<li style="flex:0 0 230px;display:flex"><a class="art-card topped" style="--top:${FEATHER[i % 4].c}" href="#/article/${a.id}"><span class="tag" style="color:${FEATHER[i % 4].light}">${esc(a.tag)}</span><span style="font-weight:700;line-height:1.35">${esc(a.title)}</span></a></li>`).join('')}
     </ul>
   </div>
 
@@ -135,9 +138,9 @@ views.home = () => `
     <h2>הסטודיו</h2>
     <p class="muted">${esc(CONFIG.address)} · חניה בחינם</p>
     <div class="row">
-      <a class="btn btn-small btn-dark" href="${CONFIG.waze}" target="_blank" rel="noopener">ניווט ב־Waze</a>
-      <a class="btn btn-small btn-outline" href="tel:${CONFIG.phoneDisplay.replace(/-/g, '')}">חיוג</a>
-      <a class="btn btn-small btn-outline" href="${CONFIG.instagram}" target="_blank" rel="noopener">אינסטגרם</a>
+      <a class="btn btn-small btn-waze" href="${CONFIG.waze}" target="_blank" rel="noopener">ניווט ב־Waze</a>
+      <a class="btn btn-small btn-outline" style="border-color:#22A55B" href="tel:${CONFIG.phoneDisplay.replace(/-/g, '')}">חיוג</a>
+      <a class="btn btn-small btn-outline" style="border-color:#D41A5E" href="${CONFIG.instagram}" target="_blank" rel="noopener">אינסטגרם</a>
     </div>
   </div>
 </section>`;
@@ -204,7 +207,7 @@ views.care = () => `
   <a class="back" href="#/home">${icon.back}חזרה</a>
   <div class="stack"><h1 id="h">טיפול בקעקוע החדש</h1><p class="muted">${esc(CARE.intro)}</p></div>
   <ol class="steps">
-    ${CARE.steps.map((s, i) => `<li><span class="rail" aria-hidden="true"><span class="num">${i + 1}</span><span class="line"></span></span>
+    ${CARE.steps.map((s, i) => `<li><span class="rail" aria-hidden="true"><span class="num" style="background:${FEATHER[i % 4].c};color:#fff">${i + 1}</span><span class="line"></span></span>
       <div class="body"><span class="when">${esc(s.when)}</span><h2>${esc(s.title)}</h2><p class="muted">${esc(s.text)}</p></div></li>`).join('')}
   </ol>
   <div class="grid2">
@@ -223,7 +226,7 @@ views.articles = () => `
 <section class="screen" aria-labelledby="h">
   <div class="stack" style="gap:4px"><h1 id="h">מאמרים</h1><p class="muted">טיפים ומידע מעולם הקעקועים.</p></div>
   <ul class="stack" style="margin:0;padding:0;list-style:none;gap:10px">
-    ${ARTICLES.map((a) => `<li><a class="art-card" href="#/article/${a.id}" style="padding:16px"><span class="tag">${esc(a.tag)}</span><span style="font-family:Rubik,sans-serif;font-weight:700;font-size:1.05rem;line-height:1.35">${esc(a.title)}</span><span class="muted clamp2" style="font-size:.92rem">${esc(a.intro)}</span></a></li>`).join('')}
+    ${ARTICLES.map((a, i) => `<li><a class="art-card topped" href="#/article/${a.id}" style="padding:16px;--top:${FEATHER[i % 4].c}"><span class="tag" style="color:${FEATHER[i % 4].light}">${esc(a.tag)}</span><span style="font-family:Rubik,sans-serif;font-weight:700;font-size:1.05rem;line-height:1.35">${esc(a.title)}</span><span class="muted clamp2" style="font-size:.92rem">${esc(a.intro)}</span></a></li>`).join('')}
   </ul>
 </section>`;
 
@@ -336,7 +339,7 @@ views.done = (kind) => {
   if (kind === 'health') {
     return `
 <section class="screen done" aria-labelledby="h">
-  <img class="logo-light" src="assets/img/logo-light.png" alt=""><img class="logo-dark" src="assets/img/logo-dark.png" alt="">
+  <img src="assets/img/logo-dark.png" alt="">
   <h1 id="h">ההצהרה מוכנה – תודה!</h1>
   <p class="muted">${CONFIG.healthEndpoint ? 'ההצהרה נשלחה לתום. נתראה בסטודיו!' : isNative ? 'עוד צעד אחד: שלחו את הסיכום לתום בוואטסאפ.' : 'עוד צעד אחד: שלחו את ההצהרה לתום. אפשר לשלוח סיכום בוואטסאפ, ולשמור עותק חתום כ־PDF.'}</p>
   ${state.lastHealth && !CONFIG.healthEndpoint ? `
@@ -666,21 +669,14 @@ $('#viewer-cta').addEventListener('click', () => viewer.close());
 viewer.addEventListener('click', (e) => { if (e.target === viewer) viewer.close(); });
 
 // ---------------------------------------------------------------------
-// מצב כהה וגודל טקסט
+// גודל טקסט (האפליקציה תמיד במצב כהה)
 // ---------------------------------------------------------------------
 const root = document.documentElement;
 function syncTop() {
-  const dark = root.getAttribute('data-theme') === 'dark';
-  $('#theme-btn').setAttribute('aria-label', dark ? 'מעבר למצב בהיר' : 'מעבר למצב כהה');
   const big = root.classList.contains('big-text');
   $('#text-btn').setAttribute('aria-pressed', String(big));
   $('#text-btn').setAttribute('aria-label', big ? 'הקטנת טקסט' : 'הגדלת טקסט');
-  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', dark ? '#0B0A0D' : '#FAF6F3'));
 }
-$('#theme-btn').addEventListener('click', () => {
-  const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-  root.setAttribute('data-theme', next); store.set('tt-theme', next); syncTop();
-});
 $('#text-btn').addEventListener('click', () => {
   root.classList.toggle('big-text'); store.set('tt-big', root.classList.contains('big-text') ? '1' : '0'); syncTop();
 });
