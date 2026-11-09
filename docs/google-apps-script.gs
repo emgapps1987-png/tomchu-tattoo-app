@@ -9,7 +9,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 2; // 2: שדות נוספים (כתובת, תיאור, איש קשר לחירום)
+var SCRIPT_VERSION = 3; // 2: שדות נוספים · 3: התרעות חריגים (flags / review)
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -18,7 +18,7 @@ function doPost(e) {
   try {
     var d = JSON.parse(e.postData.contents);
     if (d.kind !== 'health') return json_({ ok: false, error: 'unknown kind' });
-    if (!d.name || !d.idnum || !d.signature || !d.answers) return json_({ ok: false, error: 'missing fields' });
+    if (!d.name || !d.signature || !d.answers) return json_({ ok: false, error: 'missing fields' });
 
     var when = Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'dd/MM/yyyy HH:mm');
     var html = declarationHtml_(d, when);
@@ -33,7 +33,8 @@ function doPost(e) {
 
     // מייל לתום
     var yes = d.answers.filter(function (a) { return a.a === 'כן'; });
-    var subject = 'הצהרת בריאות חדשה – ' + d.name + (yes.length ? ' ⚠ יש תשובות "כן"' : '');
+    var review = d.review || (yes.length ? 'check' : '');
+    var subject = (review === 'stop' ? '⛔ לא לקעקע עד בירור – ' : review === 'check' ? '⚠ לבדיקה – ' : '') + 'הצהרת בריאות – ' + d.name;
     MailApp.sendEmail({
       to: EMAIL_TO,
       subject: subject,
@@ -43,11 +44,12 @@ function doPost(e) {
     });
 
     // שורה בגיליון
-    var head = ['תאריך שליחה', 'שם', 'ת״ז', 'תאריך לידה', 'גיל', 'טלפון', 'אימייל', 'תאריך קעקוע', 'אזור'];
+    var head = ['תאריך שליחה', 'סטטוס', 'שם', 'ת״ז', 'תאריך לידה', 'גיל', 'טלפון', 'אימייל', 'תאריך קעקוע', 'אזור'];
     (d.extraFields || []).forEach(function (x) { head.push(x.label); });
     d.answers.forEach(function (a) { head.push(a.q); });
     head = head.concat(['פירוט', 'קטין', 'הורה/אפוטרופוס', 'אישור פרסום', 'קובץ PDF']);
-    var row = [when, d.name, "'" + d.idnum, d.dob, d.age, "'" + d.phone, d.email, d.tattooDate, d.area];
+    var status = review === 'stop' ? '⛔ לא לקעקע עד בירור' : review === 'check' ? '⚠ לבדיקה' : '✔ תקין';
+    var row = [when, status, d.name, "'" + (d.idnum || ''), d.dob, d.age, "'" + d.phone, d.email, d.tattooDate, d.area];
     (d.extraFields || []).forEach(function (x) { row.push(x.value); });
     d.answers.forEach(function (a) { row.push(a.a); });
     var pub = (d.consents || []).filter(function (c) { return c.id === 'c4'; })[0];
@@ -89,6 +91,7 @@ function declarationHtml_(d, when) {
   return '<div dir="rtl" style="font-family:Arial,sans-serif;font-size:13px;color:#111;direction:rtl;text-align:right">' +
     '<h2 style="margin:0 0 4px">הצהרת בריאות – Tomchu Tattoo</h2>' +
     '<p style="margin:0 0 12px;color:#555">נשלח מהאפליקציה ב־' + e(when) + '</p>' +
+    flagsBox_(d, e) +
     '<table style="border-collapse:collapse;width:100%">' +
     '<tr><td ' + td + '><b>שם מלא</b></td><td ' + td + '>' + e(d.name) + '</td><td ' + td + '><b>ת״ז</b></td><td ' + td + '>' + e(d.idnum) + '</td></tr>' +
     '<tr><td ' + td + '><b>תאריך לידה</b></td><td ' + td + '>' + fd(d.dob) + ' (גיל ' + e(d.age) + ')</td><td ' + td + '><b>טלפון</b></td><td ' + td + '>' + e(d.phone) + '</td></tr>' +
@@ -105,6 +108,19 @@ function declarationHtml_(d, when) {
     '<h3 style="margin:16px 0 6px">' + (d.minor ? 'חתימת ההורה' : 'חתימה') + '</h3>' +
     '<img src="' + d.signature + '" alt="חתימה" style="width:320px;height:auto;border:1px solid #bbb">' +
     '</div>';
+}
+
+function flagsBox_(d, e) {
+  var flags = d.flags || [];
+  if (!flags.length) return '<p style="margin:0 0 12px;padding:8px 12px;background:#E8F5EC;border:1px solid #9BD3AE;border-radius:6px">✔ אין ממצאים חריגים בהצהרה.</p>';
+  var stop = flags.some(function (f) { return f.level === 'stop'; });
+  var items = flags.map(function (f) {
+    return '<li style="margin-bottom:6px"><b>' + (f.level === 'stop' ? '⛔ ' : '⚠ ') + e(f.q) + '</b><br><span style="color:#444">' + e(f.note) + '</span></li>';
+  }).join('');
+  return '<div style="margin:0 0 14px;padding:10px 14px;border-radius:6px;' + (stop ? 'background:#FDECEA;border:2px solid #D93025' : 'background:#FFF6E0;border:2px solid #E0A800') + '">' +
+    '<b style="font-size:14px">' + (stop ? '⛔ לא לקעקע עד בירור' : '⚠ דורש בדיקה לפני הקעקוע') + '</b>' +
+    '<ul style="margin:8px 0 0;padding-right:18px">' + items + '</ul>' +
+    (d.details ? '<p style="margin:6px 0 0"><b>פירוט הלקוח/ה:</b> ' + e(d.details) + '</p>' : '') + '</div>';
 }
 
 function folder_() {

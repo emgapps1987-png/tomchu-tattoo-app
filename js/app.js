@@ -312,7 +312,8 @@ views.health = () => {
       <div class="pills">
         <label class="pill"><input type="radio" name="${q.id}" value="לא"><span>לא</span></label>
         <label class="pill"><input type="radio" name="${q.id}" value="כן"><span>כן</span></label>
-      </div></div>`).join('')}
+      </div>
+      <p class="q-note q-${q.level}" id="qn-${q.id}" role="status" ${state.health[q.id] === 'כן' ? '' : 'hidden'}>${esc(q.note)}</p></div>`).join('')}
     <div class="field"><label for="h-details">פירוט (חובה אם סימנת "כן")</label><textarea id="h-details" name="details" class="fld" rows="3" aria-describedby="h-q-err"></textarea></div>
     <span class="err" id="h-q-err"></span>
   </div>
@@ -350,6 +351,9 @@ views.done = (kind) => {
 <section class="screen done" aria-labelledby="h">
   <img src="assets/img/logo-dark.png" alt="">
   <h1 id="h">${state.healthSent ? 'ההצהרה נשלחה – תודה!' : 'ההצהרה מוכנה – תודה!'}</h1>
+  ${state.lastHealth && state.lastHealth.review ? `<p class="q-note q-${state.lastHealth.review}" style="text-align:right">${state.lastHealth.review === 'stop'
+    ? 'בהצהרה יש פרט שבגללו ייתכן שלא נוכל לקעקע במועד שנקבע. תום תיצור איתך קשר לפני התור.'
+    : 'בהצהרה יש פרטים שתום תעבור עליהם, וייתכן שתיצור איתך קשר לפני התור.'}</p>` : ''}
   <p class="muted">${state.healthSent ? 'ההצהרה החתומה נשלחה לתום. נתראה בסטודיו!'
     : state.healthFailed ? 'לא הצלחנו לשלוח את ההצהרה אוטומטית (אולי אין אינטרנט). אפשר לנסות שוב, או לשלוח לתום את הסיכום בוואטסאפ.'
     : isNative ? 'עוד צעד אחד: שלחו את הסיכום לתום בוואטסאפ.' : 'עוד צעד אחד: שלחו את ההצהרה לתום. אפשר לשלוח סיכום בוואטסאפ, ולשמור עותק חתום כ־PDF.'}</p>
@@ -484,7 +488,11 @@ binders.health = () => {
   restoreForm(f, d);
   if (!d.tdate) f.elements.tdate.value = todayIso();
   f.addEventListener('input', () => { saveForm(f, d); updateMinor(); });
-  f.addEventListener('change', () => { saveForm(f, d); updateMinor(); });
+  f.addEventListener('change', (e) => {
+    saveForm(f, d); updateMinor();
+    const q = QUESTIONS.find((x) => x.id === e.target.name);
+    if (q) $(`#qn-${q.id}`).hidden = d[q.id] !== 'כן';
+  });
   const pad = signaturePad($('#sig'), $('#sig-ph'));
   $('#sig-clear').addEventListener('click', () => pad.clear());
   $('#h-prev').addEventListener('click', () => go(d.step - 1));
@@ -565,6 +573,10 @@ function finishHealth(signature) {
     minor, parent: minor ? { name: d.pname, id: d.pid, phone: d.pphone } : null,
     signature
   };
+  // התרעות לתום: 'stop' = לא לקעקע עד בירור, 'check' = לבדיקה
+  rec.flags = QUESTIONS.filter((q) => d[q.id] === 'כן').map((q) => ({ level: q.level, q: q.text, note: q.note }));
+  if (minor) rec.flags.push({ level: 'check', q: `קטין/ה (גיל ${age})`, note: 'לוודא שההורה נוכח/ת בסטודיו ומציג/ה תעודה מזהה.' });
+  rec.review = rec.flags.some((x) => x.level === 'stop') ? 'stop' : rec.flags.length ? 'check' : '';
   // שדות נוספים שהסקריפט מציג כמו שהם (כך שינויים בטופס לא דורשים עדכון סקריפט)
   rec.extraFields = [
     { label: 'כתובת מגורים', value: rec.address },
@@ -591,7 +603,7 @@ function sendHealth(rec) {
 function healthSummary(r) {
   const yes = r.answers.filter((x) => x.a === 'כן');
   const groups = [
-    ['הצהרת בריאות – Tomchu Tattoo'],
+    [r.review === 'stop' ? '⛔ הצהרת בריאות – לא לקעקע עד בירור' : r.review === 'check' ? '⚠ הצהרת בריאות – לבדיקה' : 'הצהרת בריאות – Tomchu Tattoo'],
     [`שם: ${r.name}`, `ת״ז: ${r.idnum}`, `תאריך לידה: ${fmtDate(r.dob)} (גיל ${r.age})`, `טלפון: ${r.phone}`,
       r.email && `אימייל: ${r.email}`, r.tattooDate && `תאריך הקעקוע: ${fmtDate(r.tattooDate)}`, r.area && `אזור: ${r.area}`,
       ...(r.extraFields || []).map((x) => `${x.label}: ${x.value}`)],
