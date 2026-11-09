@@ -290,11 +290,19 @@ views.health = () => {
       <div class="field"><label for="h-dob">תאריך לידה <span class="req" aria-hidden="true">*</span></label><input id="h-dob" name="dob" class="fld" type="date" required aria-describedby="h-dob-err"><span class="err" id="h-dob-err"></span></div>
       <div class="field"><label for="h-phone">טלפון <span class="req" aria-hidden="true">*</span></label><input id="h-phone" name="phone" class="fld ltr" type="tel" autocomplete="tel" required aria-describedby="h-phone-err"><span class="err" id="h-phone-err"></span></div>
     </div>
+    <div class="field"><label for="h-address">כתובת מגורים <span class="req" aria-hidden="true">*</span></label><input id="h-address" name="address" class="fld" autocomplete="street-address" placeholder="רחוב, מספר ועיר" required aria-describedby="h-address-err"><span class="err" id="h-address-err"></span></div>
     <div class="field"><label for="h-email">אימייל (לא חובה)</label><input id="h-email" name="email" class="fld ltr" type="email" autocomplete="email"></div>
     <div class="grid2">
       <div class="field"><label for="h-date">תאריך הקעקוע</label><input id="h-date" name="tdate" class="fld" type="date"></div>
       <div class="field"><label for="h-area">אזור הקעקוע</label><input id="h-area" name="area" class="fld" placeholder="למשל: אמה"></div>
     </div>
+    <div class="field"><label for="h-design">מה מקעקעים? <span class="req" aria-hidden="true">*</span></label><input id="h-design" name="design" class="fld" placeholder="למשל: פרח בקו עדין, 6 ס״מ, שחור" required aria-describedby="h-design-err"><span class="err" id="h-design-err"></span></div>
+    <fieldset class="stack"><legend class="legend" style="margin-bottom:6px">איש קשר לחירום (לא חובה)</legend>
+      <div class="grid2">
+        <div class="field"><label for="h-ename" class="hint">שם</label><input id="h-ename" name="ename" class="fld" autocomplete="off"></div>
+        <div class="field"><label for="h-ephone" class="hint">טלפון</label><input id="h-ephone" name="ephone" class="fld ltr" type="tel" autocomplete="off" aria-describedby="h-ephone-err"><span class="err" id="h-ephone-err"></span></div>
+      </div>
+    </fieldset>
     <p class="notice" id="minor-note" hidden>מתחת לגיל 18 נדרשים פרטי הורה/אפוטרופוס וחתימתו – בשלב האחרון.</p>
   </div>
 
@@ -317,8 +325,9 @@ views.health = () => {
         <div class="field"><label for="h-pid">ת״ז ההורה <span class="req" aria-hidden="true">*</span></label><input id="h-pid" name="pid" class="fld ltr" inputmode="numeric" maxlength="9" aria-describedby="h-pid-err"><span class="err" id="h-pid-err"></span></div>
         <div class="field"><label for="h-pphone">טלפון ההורה <span class="req" aria-hidden="true">*</span></label><input id="h-pphone" name="pphone" class="fld ltr" type="tel" aria-describedby="h-pphone-err"><span class="err" id="h-pphone-err"></span></div>
       </div>
+      ${CONSENTS.filter((c) => c.minorOnly).map((c) => `<label class="check"><input type="checkbox" name="${c.id}"><span>${esc(c.text)} <span class="req" aria-hidden="true">*</span></span></label>`).join('')}
     </div>
-    ${CONSENTS.map((c) => `<label class="check"><input type="checkbox" name="${c.id}" ${c.required ? 'required' : ''}><span>${esc(c.text)}${c.required ? ' <span class="req" aria-hidden="true">*</span>' : ''}</span></label>`).join('')}
+    ${CONSENTS.filter((c) => !c.minorOnly).map((c) => `<label class="check"><input type="checkbox" name="${c.id}" ${c.required ? 'required' : ''}><span>${esc(c.text)}${c.required ? ' <span class="req" aria-hidden="true">*</span>' : ''}</span></label>`).join('')}
     <span class="err" id="h-c-err"></span>
     <div class="field">
       <span class="legend" id="sig-label">חתימה <span class="req" aria-hidden="true">*</span></span>
@@ -505,6 +514,9 @@ binders.health = () => {
       const a = ageFrom(d.dob);
       errs.push(setErr(f, 'dob', a === null ? 'נא לבחור תאריך לידה' : (a < 14 || a > 110) ? 'נא לבדוק את תאריך הלידה' : ''));
       errs.push(setErr(f, 'phone', validPhone(d.phone) ? '' : 'נא למלא מספר טלפון תקין'));
+      errs.push(setErr(f, 'address', d.address?.trim().length >= 4 ? '' : 'נא למלא כתובת מגורים'));
+      errs.push(setErr(f, 'design', d.design?.trim().length >= 2 ? '' : 'ספרו בכמה מילים מה מקעקעים'));
+      errs.push(setErr(f, 'ephone', !d.ephone?.trim() || validPhone(d.ephone) ? '' : 'מספר הטלפון לא תקין'));
     }
     if (step === 2) {
       let firstMissing = null; let anyYes = false;
@@ -520,7 +532,8 @@ binders.health = () => {
         errs.push(setErr(f, 'pid', validIsraeliId(d.pid) ? '' : 'מספר תעודת הזהות לא תקין'));
         errs.push(setErr(f, 'pphone', validPhone(d.pphone) ? '' : 'נא למלא מספר טלפון תקין'));
       }
-      const missing = CONSENTS.filter((c) => c.required && !d[c.id]);
+      const minorNow = updateMinor();
+      const missing = CONSENTS.filter((c) => c.required && (!c.minorOnly || minorNow) && !d[c.id]);
       $('#h-c-err').textContent = missing.length ? 'נא לאשר את כל סעיפי החובה' : '';
       errs.push(missing.length ? f.elements[missing[0].id] : null);
       $('#h-sig-err').textContent = pad.isEmpty() ? 'נא לחתום' : '';
@@ -545,11 +558,19 @@ function finishHealth(signature) {
     submittedAt: new Date().toISOString(), submittedAtText: nowStamp(),
     name: d.name.trim(), idnum: d.idnum, dob: d.dob, age, phone: d.phone, email: d.email || '',
     tattooDate: d.tdate || '', area: d.area || '',
+    address: (d.address || '').trim(), design: (d.design || '').trim(),
+    emergency: d.ename || d.ephone ? { name: (d.ename || '').trim(), phone: (d.ephone || '').trim() } : null,
     answers: QUESTIONS.map((q) => ({ id: q.id, q: q.text, a: d[q.id] })), details: d.details || '',
-    consents: CONSENTS.map((c) => ({ id: c.id, text: c.text, ok: !!d[c.id] })),
+    consents: CONSENTS.filter((c) => !c.minorOnly || minor).map((c) => ({ id: c.id, text: c.text, ok: !!d[c.id] })),
     minor, parent: minor ? { name: d.pname, id: d.pid, phone: d.pphone } : null,
     signature
   };
+  // שדות נוספים שהסקריפט מציג כמו שהם (כך שינויים בטופס לא דורשים עדכון סקריפט)
+  rec.extraFields = [
+    { label: 'כתובת מגורים', value: rec.address },
+    { label: 'מה מקעקעים', value: rec.design },
+    { label: 'איש קשר לחירום', value: rec.emergency ? [rec.emergency.name, rec.emergency.phone].filter(Boolean).join(' · ') : '' }
+  ].filter((x) => x.value);
   state.lastHealth = rec;
   state.healthSent = false; state.healthFailed = false;
   const after = () => { state.health = { step: 1 }; state.sigData = null; location.hash = '#/done/health'; };
@@ -572,7 +593,8 @@ function healthSummary(r) {
   const groups = [
     ['הצהרת בריאות – Tomchu Tattoo'],
     [`שם: ${r.name}`, `ת״ז: ${r.idnum}`, `תאריך לידה: ${fmtDate(r.dob)} (גיל ${r.age})`, `טלפון: ${r.phone}`,
-      r.email && `אימייל: ${r.email}`, r.tattooDate && `תאריך הקעקוע: ${fmtDate(r.tattooDate)}`, r.area && `אזור: ${r.area}`],
+      r.email && `אימייל: ${r.email}`, r.tattooDate && `תאריך הקעקוע: ${fmtDate(r.tattooDate)}`, r.area && `אזור: ${r.area}`,
+      ...(r.extraFields || []).map((x) => `${x.label}: ${x.value}`)],
     [yes.length ? 'שאלות שסומנו "כן":\n' + yes.map((x) => `• ${x.q}`).join('\n') : 'כל התשובות לשאלות הבריאות: "לא"',
       r.details && `פירוט: ${r.details}`],
     [r.minor && `הורה/אפוטרופוס: ${r.parent.name}, ת״ז ${r.parent.id}, טלפון ${r.parent.phone}`,
@@ -590,7 +612,8 @@ function printHealth(r) {
     <h2>פרטים אישיים</h2>
     <table><tr><td>שם מלא</td><td>${esc(r.name)}</td><td>ת״ז</td><td>${esc(r.idnum)}</td></tr>
       <tr><td>תאריך לידה</td><td>${fmtDate(r.dob)} (גיל ${r.age})</td><td>טלפון</td><td>${esc(r.phone)}</td></tr>
-      <tr><td>תאריך הקעקוע</td><td>${fmtDate(r.tattooDate)}</td><td>אזור</td><td>${esc(r.area)}</td></tr></table>
+      <tr><td>תאריך הקעקוע</td><td>${fmtDate(r.tattooDate)}</td><td>אזור</td><td>${esc(r.area)}</td></tr>
+      ${(r.extraFields || []).map((x) => `<tr><td>${esc(x.label)}</td><td colspan="3">${esc(x.value)}</td></tr>`).join('')}</table>
     <h2>שאלות בריאות</h2>
     <table>${r.answers.map((x) => `<tr><td>${esc(x.q)}</td><td style="width:50pt;text-align:center">${esc(x.a)}</td></tr>`).join('')}</table>
     ${r.details ? `<p><strong>פירוט:</strong> ${esc(r.details)}</p>` : ''}

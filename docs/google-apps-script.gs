@@ -9,6 +9,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
+var SCRIPT_VERSION = 2; // 2: שדות נוספים (כתובת, תיאור, איש קשר לחירום)
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -43,9 +44,11 @@ function doPost(e) {
 
     // שורה בגיליון
     var head = ['תאריך שליחה', 'שם', 'ת״ז', 'תאריך לידה', 'גיל', 'טלפון', 'אימייל', 'תאריך קעקוע', 'אזור'];
+    (d.extraFields || []).forEach(function (x) { head.push(x.label); });
     d.answers.forEach(function (a) { head.push(a.q); });
     head = head.concat(['פירוט', 'קטין', 'הורה/אפוטרופוס', 'אישור פרסום', 'קובץ PDF']);
     var row = [when, d.name, "'" + d.idnum, d.dob, d.age, "'" + d.phone, d.email, d.tattooDate, d.area];
+    (d.extraFields || []).forEach(function (x) { row.push(x.value); });
     d.answers.forEach(function (a) { row.push(a.a); });
     var pub = (d.consents || []).filter(function (c) { return c.id === 'c4'; })[0];
     row = row.concat([d.details || '', d.minor ? 'כן' : 'לא',
@@ -91,6 +94,7 @@ function declarationHtml_(d, when) {
     '<tr><td ' + td + '><b>תאריך לידה</b></td><td ' + td + '>' + fd(d.dob) + ' (גיל ' + e(d.age) + ')</td><td ' + td + '><b>טלפון</b></td><td ' + td + '>' + e(d.phone) + '</td></tr>' +
     '<tr><td ' + td + '><b>תאריך הקעקוע</b></td><td ' + td + '>' + fd(d.tattooDate) + '</td><td ' + td + '><b>אזור</b></td><td ' + td + '>' + e(d.area) + '</td></tr>' +
     (d.email ? '<tr><td ' + td + '><b>אימייל</b></td><td ' + td + ' colspan="3">' + e(d.email) + '</td></tr>' : '') +
+    (d.extraFields || []).map(function (x) { return '<tr><td ' + td + '><b>' + e(x.label) + '</b></td><td ' + td + ' colspan="3">' + e(x.value) + '</td></tr>'; }).join('') +
     '</table>' +
     '<h3 style="margin:16px 0 6px">שאלות בריאות</h3>' +
     '<table style="border-collapse:collapse;width:100%">' + rows + '</table>' +
@@ -114,7 +118,9 @@ function sheet_(head) {
   while (files.hasNext()) { var f = files.next(); if (f.getName() === SHEET_NAME && !f.isTrashed()) { file = f; break; } }
   var ss = file ? SpreadsheetApp.open(file) : SpreadsheetApp.create(SHEET_NAME);
   var sh = ss.getSheets()[0];
-  if (sh.getLastRow() === 0) { sh.appendRow(head); sh.setFrozenRows(1); sh.setRightToLeft(true); }
+  if (sh.getLastRow() === 0) { sh.setFrozenRows(1); sh.setRightToLeft(true); }
+  // שורת הכותרות תמיד תואמת לטופס הנוכחי
+  sh.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight('bold');
   return sh;
 }
 
