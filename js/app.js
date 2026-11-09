@@ -285,7 +285,7 @@ views.health = () => {
 
   <div class="stack-lg" data-step="1">
     <div class="field"><label for="h-name">שם מלא <span class="req" aria-hidden="true">*</span></label><input id="h-name" name="name" class="fld" autocomplete="name" required aria-describedby="h-name-err"><span class="err" id="h-name-err"></span></div>
-    <div class="field"><label for="h-id">תעודת זהות <span class="req" aria-hidden="true">*</span></label><input id="h-id" name="idnum" class="fld ltr" inputmode="numeric" maxlength="9" required aria-describedby="h-id-err"><span class="err" id="h-id-err"></span></div>
+    <div class="field"><label for="h-id">תעודת זהות (לא חובה)</label><input id="h-id" name="idnum" class="fld ltr" inputmode="numeric" maxlength="9" aria-describedby="h-id-err"><span class="err" id="h-id-err"></span></div>
     <div class="grid2">
       <div class="field"><label for="h-dob">תאריך לידה <span class="req" aria-hidden="true">*</span></label><input id="h-dob" name="dob" class="fld" type="date" required aria-describedby="h-dob-err"><span class="err" id="h-dob-err"></span></div>
       <div class="field"><label for="h-phone">טלפון <span class="req" aria-hidden="true">*</span></label><input id="h-phone" name="phone" class="fld ltr" type="tel" autocomplete="tel" required aria-describedby="h-phone-err"><span class="err" id="h-phone-err"></span></div>
@@ -303,6 +303,7 @@ views.health = () => {
         <div class="field"><label for="h-ephone" class="hint">טלפון</label><input id="h-ephone" name="ephone" class="fld ltr" type="tel" autocomplete="off" aria-describedby="h-ephone-err"><span class="err" id="h-ephone-err"></span></div>
       </div>
     </fieldset>
+    <p class="notice">בסטודיו נבקש לראות תעודה מזהה לאימות גיל – אין צורך למלא כאן את המספר.</p>
     <p class="notice" id="minor-note" hidden>מתחת לגיל 18 נדרשים פרטי הורה/אפוטרופוס וחתימתו – בשלב האחרון.</p>
   </div>
 
@@ -518,7 +519,7 @@ binders.health = () => {
     const errs = [];
     if (step === 1) {
       errs.push(setErr(f, 'name', d.name?.trim().length >= 2 ? '' : 'נא למלא שם מלא'));
-      errs.push(setErr(f, 'idnum', validIsraeliId(d.idnum) ? '' : 'מספר תעודת הזהות לא תקין'));
+      errs.push(setErr(f, 'idnum', !d.idnum?.trim() || validIsraeliId(d.idnum) ? '' : 'מספר תעודת הזהות לא תקין'));
       const a = ageFrom(d.dob);
       errs.push(setErr(f, 'dob', a === null ? 'נא לבחור תאריך לידה' : (a < 14 || a > 110) ? 'נא לבדוק את תאריך הלידה' : ''));
       errs.push(setErr(f, 'phone', validPhone(d.phone) ? '' : 'נא למלא מספר טלפון תקין'));
@@ -604,7 +605,7 @@ function healthSummary(r) {
   const yes = r.answers.filter((x) => x.a === 'כן');
   const groups = [
     [r.review === 'stop' ? '⛔ הצהרת בריאות – לא לקעקע עד בירור' : r.review === 'check' ? '⚠ הצהרת בריאות – לבדיקה' : 'הצהרת בריאות – Tomchu Tattoo'],
-    [`שם: ${r.name}`, `ת״ז: ${r.idnum}`, `תאריך לידה: ${fmtDate(r.dob)} (גיל ${r.age})`, `טלפון: ${r.phone}`,
+    [`שם: ${r.name}`, r.idnum && `ת״ז: ${r.idnum}`, `תאריך לידה: ${fmtDate(r.dob)} (גיל ${r.age})`, `טלפון: ${r.phone}`,
       r.email && `אימייל: ${r.email}`, r.tattooDate && `תאריך הקעקוע: ${fmtDate(r.tattooDate)}`, r.area && `אזור: ${r.area}`,
       ...(r.extraFields || []).map((x) => `${x.label}: ${x.value}`)],
     [yes.length ? 'שאלות שסומנו "כן":\n' + yes.map((x) => `• ${x.q}`).join('\n') : 'כל התשובות לשאלות הבריאות: "לא"',
