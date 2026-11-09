@@ -19,7 +19,7 @@ export const CONFIG = {
   // כל עוד הן ריקות – הטפסים נשלחים לתום בוואטסאפ (מצב בדיקות).
   // הוראות הקמה: docs/google-apps-script.md
   contactEndpoint: '',
-  healthEndpoint: ''
+  healthEndpoint: 'https://script.google.com/macros/s/AKfycbx8Fdjy-R1BFsbZRwoc3WbTqR8FzpORe76ot9fpKa5OLgF-ReHm8WbvalKR26HcqtckBw/exec'
 };
 
 export const TAGS = { fine: 'קו עדין', sketch: 'סקיצה', color: 'צבע', studio: 'בסטודיו' };

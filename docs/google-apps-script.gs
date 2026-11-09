@@ -109,8 +109,10 @@ function folder_() {
 }
 
 function sheet_(head) {
-  var files = DriveApp.getFilesByName(SHEET_NAME);
-  var ss = files.hasNext() ? SpreadsheetApp.open(files.next()) : SpreadsheetApp.create(SHEET_NAME);
+  // מחפשים רק גיליונות (הסקריפט עצמו יכול להיקרא באותו שם)
+  var files = DriveApp.getFilesByType(MimeType.GOOGLE_SHEETS), file = null;
+  while (files.hasNext()) { var f = files.next(); if (f.getName() === SHEET_NAME && !f.isTrashed()) { file = f; break; } }
+  var ss = file ? SpreadsheetApp.open(file) : SpreadsheetApp.create(SHEET_NAME);
   var sh = ss.getSheets()[0];
   if (sh.getLastRow() === 0) { sh.appendRow(head); sh.setFrozenRows(1); sh.setRightToLeft(true); }
   return sh;
