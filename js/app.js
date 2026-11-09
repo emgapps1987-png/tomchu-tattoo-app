@@ -340,9 +340,12 @@ views.done = (kind) => {
     return `
 <section class="screen done" aria-labelledby="h">
   <img src="assets/img/logo-dark.png" alt="">
-  <h1 id="h">ההצהרה מוכנה – תודה!</h1>
-  <p class="muted">${CONFIG.healthEndpoint ? 'ההצהרה נשלחה לתום. נתראה בסטודיו!' : isNative ? 'עוד צעד אחד: שלחו את הסיכום לתום בוואטסאפ.' : 'עוד צעד אחד: שלחו את ההצהרה לתום. אפשר לשלוח סיכום בוואטסאפ, ולשמור עותק חתום כ־PDF.'}</p>
-  ${state.lastHealth && !CONFIG.healthEndpoint ? `
+  <h1 id="h">${state.healthSent ? 'ההצהרה נשלחה – תודה!' : 'ההצהרה מוכנה – תודה!'}</h1>
+  <p class="muted">${state.healthSent ? 'ההצהרה החתומה נשלחה לתום. נתראה בסטודיו!'
+    : state.healthFailed ? 'לא הצלחנו לשלוח את ההצהרה אוטומטית (אולי אין אינטרנט). אפשר לנסות שוב, או לשלוח לתום את הסיכום בוואטסאפ.'
+    : isNative ? 'עוד צעד אחד: שלחו את הסיכום לתום בוואטסאפ.' : 'עוד צעד אחד: שלחו את ההצהרה לתום. אפשר לשלוח סיכום בוואטסאפ, ולשמור עותק חתום כ־PDF.'}</p>
+  ${state.healthFailed ? '<button type="button" class="btn btn-primary" id="retry-health">לנסות לשלוח שוב</button>' : ''}
+  ${state.lastHealth && !state.healthSent ? `
   <a class="btn btn-primary" href="${waLink(healthSummary(state.lastHealth))}" target="_blank" rel="noopener">שליחת הסיכום לתום בוואטסאפ</a>
   ${isNative ? '' : '<button type="button" class="btn btn-outline" id="print-health">שמירה / הדפסה כ־PDF (עם החתימה)</button>'}` : ''}
   <a class="btn btn-outline" href="#/home">חזרה לבית</a>
@@ -389,7 +392,7 @@ const tabOf = (name, param) => ({ about: 'about', accessibility: 'about', galler
 function render() {
   const [rawName, param] = location.hash.replace(/^#\/?/, '').split('/');
   const name = views[rawName] ? rawName : 'home';
-  if (name === 'done' && param === 'health' && !state.lastHealth && !CONFIG.healthEndpoint) { location.replace('#/health'); return; }
+  if (name === 'done' && param === 'health' && !state.lastHealth) { location.replace('#/health'); return; }
   const main = $('#main');
   main.innerHTML = views[name](param);
   $$('.tabbar a').forEach((a) => { if (a.dataset.tab === tabOf(name, param)) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
@@ -418,6 +421,10 @@ binders.gallery = () => {
 
 binders.done = (kind) => {
   $('#print-health')?.addEventListener('click', () => printHealth(state.lastHealth));
+  $('#retry-health')?.addEventListener('click', (e) => {
+    e.target.disabled = true; e.target.textContent = 'שולח…';
+    sendHealth(state.lastHealth).then(render);
+  });
 };
 
 // ---- טופס פנייה ----
@@ -544,12 +551,20 @@ function finishHealth(signature) {
     signature
   };
   state.lastHealth = rec;
+  state.healthSent = false; state.healthFailed = false;
   const after = () => { state.health = { step: 1 }; state.sigData = null; location.hash = '#/done/health'; };
   if (CONFIG.healthEndpoint) {
     const btn = $('#h-next'); btn.disabled = true; btn.textContent = 'שולח…';
-    postJson(CONFIG.healthEndpoint, { kind: 'health', ...rec }).then(after)
-      .catch(() => { btn.disabled = false; btn.textContent = 'סיום וחתימה'; alertErr($('#health-form'), 'השליחה נכשלה. בדקו חיבור לאינטרנט ונסו שוב.'); });
+    sendHealth(rec).then(after);
   } else after();
+}
+
+// שליחת ההצהרה למייל של תום (דרך Google Apps Script בחשבון שלה)
+function sendHealth(rec) {
+  return postJson(CONFIG.healthEndpoint, { kind: 'health', ...rec })
+    .then((r) => r.json().catch(() => ({ ok: true })))
+    .then((j) => { if (j && j.ok === false) throw new Error(j.error || 'failed'); state.healthSent = true; state.healthFailed = false; })
+    .catch(() => { state.healthSent = false; state.healthFailed = true; });
 }
 
 function healthSummary(r) {
