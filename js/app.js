@@ -92,6 +92,8 @@ views.home = () => `
     </div>
   </div>
 
+  ${promoCard()}
+
   <a class="care-card" href="#/care">
     <span style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
       <span class="stack" style="gap:4px"><span class="care-kicker">התקעקעת? תתחדש/י!</span><span class="care-title">מדריך ההחלמה לקעקוע החדש</span></span>
@@ -400,7 +402,7 @@ views.accessibility = () => `
 // ---------------------------------------------------------------------
 // ניתוב
 // ---------------------------------------------------------------------
-const titles = { home: 'בית', about: 'תום', gallery: 'עבודות', care: 'מדריך ההחלמה', articles: 'מאמרים', article: 'מאמר', contact: 'פנייה לתום', health: 'הצהרת בריאות', done: 'תודה', accessibility: 'הצהרת נגישות' };
+const titles = { home: 'בית', about: 'תום', gallery: 'עבודות', care: 'מדריך ההחלמה', articles: 'מאמרים', article: 'מאמר', contact: 'פנייה לתום', health: 'הצהרת בריאות', done: 'תודה', accessibility: 'הצהרת נגישות', promo: 'מבצע החודש' };
 const tabOf = (name, param) => ({ about: 'about', accessibility: 'about', gallery: 'gallery', contact: 'contact', health: 'health', done: param === 'health' ? 'health' : 'contact' }[name] || 'home');
 
 function render() {
@@ -797,8 +799,80 @@ function showInstallTip() {
   });
 }
 
+// ---------------------------------------------------------------------
+// מבצע החודש – תום מעדכנת בדף הניהול שלה, והאפליקציה מציגה חלון פעם אחת לכל מבצע
+// ---------------------------------------------------------------------
+const promoUrl = CONFIG.promoEndpoint || (CONFIG.healthEndpoint ? CONFIG.healthEndpoint + '?action=promo' : '');
+let promoForce = false;
+views.promo = (p) => views.home(p);
+binders.promo = () => { promoForce = true; maybeShowPromo(); };
+
+function promoCard() {
+  const p = state.promo; if (!p) return '';
+  return `<button type="button" class="promo-card" data-open-promo>
+    <span class="promo-badge">מבצע החודש</span>
+    <span class="promo-card-title">${esc(p.title)}</span>
+    <span class="promo-card-until">בתוקף עד ${esc(fmtDate(p.until))} · לפרטים</span>
+  </button>`;
+}
+document.addEventListener('click', (e) => { if (e.target.closest('[data-open-promo]')) { promoForce = true; maybeShowPromo(); } });
+
+function loadPromo() {
+  if (!promoUrl) return;
+  const ctl = 'AbortController' in window ? new AbortController() : null;
+  const t = setTimeout(() => ctl && ctl.abort(), 8000);
+  fetch(promoUrl, { signal: ctl ? ctl.signal : undefined })
+    .then((r) => r.json())
+    .then((j) => {
+      const p = j && j.ok && j.promo;
+      state.promo = p && p.until >= todayIso() ? p : null;
+      const name = location.hash.replace(/^#\/?/, '').split('/')[0] || 'home';
+      if (state.promo && (name === 'home' || name === 'promo') && !$('[data-open-promo]')) {
+        $('.care-card')?.insertAdjacentHTML('beforebegin', promoCard());
+      }
+      maybeShowPromo();
+    })
+    .catch(() => {})
+    .finally(() => clearTimeout(t));
+}
+
+function maybeShowPromo() {
+  const p = state.promo; if (!p) return;
+  if (!promoForce && store.get('tt-promo-seen') === p.id) return;
+  if (document.body.classList.contains('intro-on')) { setTimeout(maybeShowPromo, 700); return; }
+  if ($('#promo-dlg')) return;
+  promoForce = false;
+  store.set('tt-promo-seen', p.id);
+  const dlg = document.createElement('dialog');
+  dlg.id = 'promo-dlg'; dlg.className = 'promo-dlg'; dlg.setAttribute('aria-labelledby', 'promo-t');
+  const wa = waLink(`היי תום, ראיתי באפליקציה את מבצע החודש – "${p.title}". אשמח לקבוע תור 🙂`);
+  dlg.innerHTML = `
+    <div class="promo-media${p.image ? '' : ' no-img'}">
+      ${p.image ? `<img src="${esc(p.image)}" alt="">` : '<img class="promo-logo" src="assets/img/logo-dark.png" alt="">'}
+      <span class="promo-badge">מבצע החודש</span>
+      <button type="button" class="icon-btn promo-x" aria-label="סגירה"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="promo-body">
+      <h2 id="promo-t">${esc(p.title)}</h2>
+      ${p.text ? `<p class="promo-text">${esc(p.text).replace(/\n/g, '<br>')}</p>` : ''}
+      <p class="promo-until">בתוקף עד ${esc(fmtDate(p.until))}</p>
+      <a class="btn btn-primary" href="${wa}" target="_blank" rel="noopener">לקביעת תור במבצע</a>
+      <button type="button" class="btn btn-ghost promo-later">אולי אחר כך</button>
+    </div>`;
+  document.body.appendChild(dlg);
+  const close = () => { dlg.close(); dlg.remove(); if (location.hash.startsWith('#/promo')) history.replaceState(null, '', '#/'); };
+  $('.promo-x', dlg).addEventListener('click', close);
+  $('.promo-later', dlg).addEventListener('click', close);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); close(); });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) close(); });
+  const img = $('.promo-media img', dlg); if (img) img.addEventListener('error', () => { $('.promo-media', dlg).classList.add('no-img'); img.src = 'assets/img/logo-dark.png'; img.className = 'promo-logo'; }, { once: true });
+  if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+  $('#promo-t', dlg).setAttribute('tabindex', '-1'); $('#promo-t', dlg).focus();
+}
+
 syncTop();
 playIntro();
+loadPromo();
 setTimeout(showInstallTip, 3800);
 window.addEventListener('hashchange', render);
 render();

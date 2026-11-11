@@ -310,3 +310,24 @@ h2.barred::before { content: ""; width: 6px; height: 18px; border-radius: 3px; b
 .q-note { margin: 0; padding: 10px 12px; border-radius: 10px; font-size: .9rem; line-height: 1.5; }
 .q-check { background: #251B33; border: 1px solid #5B4BC4; color: #E3DEFF; }
 .q-stop { background: #3A1513; border: 1px solid #FF8A80; color: #FFD9D4; }
+
+/* ===== מבצע החודש ===== */
+.promo-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; text-align: start; padding: 16px; border-radius: 18px; border: 1.5px solid var(--pri); background: var(--pri-soft); color: var(--ink); cursor: pointer; }
+.promo-card-title { font-family: Rubik, Heebo, sans-serif; font-weight: 700; font-size: 1.1rem; }
+.promo-card-until { font-size: .9rem; color: var(--muted); }
+.promo-badge { display: inline-block; padding: 4px 12px; border-radius: 999px; background: var(--pri); color: var(--onpri); font-size: .8rem; font-weight: 800; }
+dialog.promo-dlg { width: calc(100% - 36px); max-width: 420px; max-height: calc(100dvh - 36px); padding: 0; border: 1px solid var(--fline); border-radius: 24px; background: var(--surface); color: var(--ink); overflow: auto; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+dialog.promo-dlg::backdrop { background: rgba(6,5,8,.72); }
+.promo-media { position: relative; background: var(--card); }
+.promo-media img { width: 100%; max-height: 300px; object-fit: cover; }
+.promo-media.no-img { height: 150px; display: flex; align-items: center; justify-content: center; }
+.promo-media img.promo-logo { width: auto; height: 110px; object-fit: contain; }
+.promo-media .promo-badge { position: absolute; top: 14px; inset-inline-start: 14px; }
+.promo-x { position: absolute; top: 10px; inset-inline-end: 10px; background: rgba(11,10,13,.8); color: #F4EFF4; border: 0; }
+.promo-body { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 10px; }
+.promo-body h2 { font-size: 1.35rem; }
+.promo-text { color: var(--card-muted); line-height: 1.6; }
+.promo-until { color: var(--acc); font-weight: 700; font-size: .92rem; }
+.promo-body .btn { margin-top: 4px; }
+.btn-ghost { background: transparent; border: 0; color: var(--muted); min-height: 44px; }
+.promo-body h2:focus { outline: none; }
