@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 5; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal
+var SCRIPT_VERSION = 6; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -157,6 +157,12 @@ var PROMO_FOLDER = 'Tomchu – מבצעים';
 function doGet(e) {
   var p = (e && e.parameter) || {};
   if (p.action === 'promo') return json_({ ok: true, promo: activePromo_() });
+  if (p.action === 'translate') {
+    var q = String(p.q || '').slice(0, 200);
+    if (!q) return json_({ ok: false });
+    try { return json_({ ok: true, text: LanguageApp.translate(q, 'iw', 'en') }); }
+    catch (err) { return json_({ ok: false, error: String(err) }); }
+  }
   if (p.admin) {
     if (!isAdminKey_(p.admin)) return HtmlService.createHtmlOutput('<p dir="rtl" style="font-family:Arial;font-size:18px;padding:24px">אין גישה.</p>');
     var t = HtmlService.createTemplate(ADMIN_HTML_);

@@ -90,6 +90,7 @@ views.home = () => `
       <a class="btn btn-tint tint-teal" href="#/health"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M12 10v6M9 13h6"/></svg></span>הצהרת בריאות</a>
       <a class="btn btn-tint tint-green" href="https://wa.me/${CONFIG.whatsapp}" target="_blank" rel="noopener"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"/></svg></span>וואטסאפ לתום</a>
     </div>
+    <a class="btn btn-tint tint-violet" href="#/ideas"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>מחפשים השראה? רעיונות מפינטרסט</a>
   </div>
 
   ${promoCard()}
@@ -402,7 +403,7 @@ views.accessibility = () => `
 // ---------------------------------------------------------------------
 // ניתוב
 // ---------------------------------------------------------------------
-const titles = { home: 'בית', about: 'תום', gallery: 'עבודות', care: 'מדריך ההחלמה', articles: 'מאמרים', article: 'מאמר', contact: 'פנייה לתום', health: 'הצהרת בריאות', done: 'תודה', accessibility: 'הצהרת נגישות', promo: 'מבצע החודש' };
+const titles = { home: 'בית', about: 'תום', gallery: 'עבודות', care: 'מדריך ההחלמה', articles: 'מאמרים', article: 'מאמר', contact: 'פנייה לתום', health: 'הצהרת בריאות', done: 'תודה', accessibility: 'הצהרת נגישות', promo: 'מבצע החודש', ideas: 'רעיונות מפינטרסט' };
 const tabOf = (name, param) => ({ about: 'about', accessibility: 'about', gallery: 'gallery', contact: 'contact', health: 'health', done: param === 'health' ? 'health' : 'contact' }[name] || 'home');
 
 function render() {
@@ -799,6 +800,159 @@ function showInstallTip() {
     if (!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice.catch(() => {}); deferredPrompt = null; tip.remove();
   });
 }
+
+
+// ---------------------------------------------------------------------
+// רעיון → פינטרסט: כותבים בעברית, מתרגמים לשפת המקעקעים ופותחים חיפוש בפינטרסט
+// ---------------------------------------------------------------------
+const IDEA_STARTS = [
+  { he: 'שם של הילד', en: 'baby name script tattoo' },
+  { he: 'קעקוע זוגי', en: 'matching couple tattoo' },
+  { he: 'זכר לאהוב', en: 'memorial tattoo' },
+  { he: 'חיה אהובה', en: 'pet portrait tattoo' },
+  { he: 'ציטוט', en: 'quote script tattoo' }
+];
+const IDEA_STYLES = [
+  { he: 'Fine Line', en: 'fine line' }, { he: 'מינימליסטי', en: 'minimalist' }, { he: 'ריאליזם', en: 'realism' },
+  { he: 'צבעוני', en: 'colorful watercolor' }, { he: 'שחור־אפור', en: 'black and grey' }
+];
+// מילים בעברית → מונחי חיפוש שמקעקעים משתמשים בהם (גוברים על התרגום האוטומטי)
+const W = (alt) => new RegExp('(^|\\s)(?:' + alt + ')(?=\\s|$|[,.!?])', 'g'); // מילה שלמה בעברית
+const HE_TERMS = [
+  [W('(?:ב|על |ל)?(?:ה)?פרק(?:י)? (?:ה)?(?:כף|כפות) (?:ה)?יד(?:יים)?'), 'wrist'], [W('(?:ב|על |ל)?(?:ה)?אמה'), 'forearm'],
+  [W('(?:ב|על |ל)?(?:ה)?זרוע'), 'arm'], [W('(?:ב|על |ל)?(?:ה)?כתף'), 'shoulder'], [W('(?:ב|על |ל)?עצם (?:ה)?בריח'), 'collarbone'],
+  [W('(?:ב|על |ל)?(?:ה)?צלעות'), 'ribs'], [W('(?:ב|על |ל)?(?:ה)?קרסול'), 'ankle'], [W('(?:ב|על |ל)?(?:ה)?שוק'), 'calf'],
+  [W('(?:ב|על |ל)?(?:ה)?ירך|(?:ה)?ירכיים'), 'thigh'], [W('(?:ב|על |ל)?(?:ה)?עורף'), 'back of neck'], [W('(?:ב|על |ל)?(?:ה)?אצבע(?:ות)?'), 'finger'],
+  [W('(?:ב|על |ל)?(?:ה)?גב'), 'back'], [W('מאחורי (?:ה)?אוזן'), 'behind ear'],
+  [W('עדינ\\S*|עדין|דקיק\\S*'), 'delicate fine line'], [W('קטנ\\S*|קטן|קטנטנ\\S*|קטנטן'), 'small'],
+  [W('מינימליסט\\S*'), 'minimalist'], [W('צבעונ\\S*|צבעוני'), 'colorful'], [W('שחור.?אפור'), 'black and grey'],
+  [W('ריאליסט\\S*|ריאליזם'), 'realism'], [W('גאומטר\\S*|גיאומטר\\S*'), 'geometric'], [W('כתב יד|כיתוב|כתובת'), 'script lettering']
+];
+const ADJ = new Set('delicate fine line small tiny little minimalist colorful watercolor black grey gray realism geometric script lettering beautiful cute big large strong simple'.split(' '));
+const BODY = new Set('wrist forearm arm shoulder collarbone ribs ankle calf thigh neck finger back ear behind'.split(' '));
+const STOP = new Set('a an the of on in at with and or but for to my me i we our your something like want would some very too not that this is are be it its kind'.split(' '));
+const ideaState = { text: '', style: '', en: '' };
+
+const WEAK = new Set('strong beautiful cute nice pretty cool special meaningful'.split(' '));
+function cleanQuery(en) {
+  const raw = String(en).toLowerCase().replace(/[^a-z\s-]/g, ' ').split(/\s+/).filter(Boolean);
+  const words = [];
+  for (let i = 0; i < raw.length; i++) {
+    const w = raw[i];
+    if (w === 'not' || w === "don't" || w === 'without') { i += (raw[i + 1] === 'too' || raw[i + 1] === 'very' || raw[i + 1] === 'so') ? 2 : 1; continue; }
+    if (STOP.has(w) || WEAK.has(w) || w === 'tattoo' || w === 'tattoos') continue;
+    if (!words.includes(w)) words.push(w);
+  }
+  return words;
+}
+// parts = { nouns: [...], mods: ['delicate fine line', 'small'], body: ['wrist'] }
+function buildQueries(parts, style) {
+  const nouns = parts.nouns.filter((w) => !ADJ.has(w) && !BODY.has(w)).slice(0, 3);
+  const mods = parts.mods.slice(0, 2);
+  const body = parts.body.slice(0, 1);
+  const join = (arr) => arr.filter(Boolean).join(' ').split(' ').filter((w, i, a) => w && a.indexOf(w) === i).join(' ');
+  const main = join([...mods, ...nouns, ...body, style, 'tattoo']);
+  const alts = [];
+  if (nouns.length) alts.push(join([nouns[0], style || 'fine line', 'tattoo']));
+  if (nouns.length && body.length) alts.push(join(['small', nouns[0], body[0], 'tattoo']));
+  else if (nouns.length > 1) alts.push(join([nouns[0], nouns[1], 'tattoo ideas']));
+  else if (nouns.length) alts.push(join([nouns[0], 'tattoo ideas']));
+  return { main, alts: alts.filter((x, i, arr) => x !== main && arr.indexOf(x) === i) };
+}
+const pinUrl = (q) => `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(q)}`;
+
+async function translateIdea(he) {
+  // מונחים מוכרים לפני התרגום, כדי שהתרגום לא "יפספס" אותם
+  const mods = [], body = []; let rest = ' ' + he + ' ';
+  HE_TERMS.forEach(([re, en]) => { re.lastIndex = 0; if (re.test(rest)) { (BODY.has(en.split(' ').pop()) ? body : mods).push(en); re.lastIndex = 0; rest = rest.replace(re, ' '); } re.lastIndex = 0; });
+  rest = rest.replace(/קעקוע\S*/g, ' ').replace(/\s+/g, ' ').trim();
+  let en = '';
+  if (rest && /[֐-׿]/.test(rest) && CONFIG.healthEndpoint) {
+    try {
+      const ctl = 'AbortController' in window ? new AbortController() : null;
+      const tm = setTimeout(() => ctl && ctl.abort(), 7000);
+      const j = await fetch(`${CONFIG.healthEndpoint}?action=translate&q=${encodeURIComponent(rest)}`, { signal: ctl ? ctl.signal : undefined }).then((r) => r.json());
+      clearTimeout(tm);
+      en = (j && j.ok && j.text) || '';
+    } catch (e) { en = ''; }
+  } else if (!/[֐-׿]/.test(rest)) en = rest;
+  if (!en && rest) return null; // אין תרגום – נחפש בעברית
+  const words = cleanQuery(en);
+  return { nouns: words.filter((w) => !ADJ.has(w) && !BODY.has(w)), mods: [...mods, ...words.filter((w) => ADJ.has(w))], body: [...body, ...words.filter((w) => BODY.has(w))] };
+}
+
+views.ideas = () => `
+<section class="screen" aria-labelledby="h">
+  <div class="stack" style="gap:6px">
+    <span class="kicker" style="color:var(--acc);font-weight:700;font-size:.9rem">מחפשים השראה?</span>
+    <h1 id="h">ספרו מה בראש – ונפתח לכם לוח רעיונות</h1>
+    <p class="muted">כותבים בעברית, במילים שלכם. אנחנו מתרגמים לשפה שפינטרסט מבין הכי טוב.</p>
+  </div>
+  <form id="idea-form" class="stack" novalidate>
+    <div class="field">
+      <label for="idea-text">הרעיון שלי</label>
+      <textarea id="idea-text" class="fld" rows="3" maxlength="200" placeholder="למשל: פרפר עדין עם פרחים על פרק כף היד">${esc(ideaState.text)}</textarea>
+    </div>
+    <div class="stack" style="gap:8px">
+      <span class="muted" style="font-weight:700;font-size:.9rem">או התחילו מרעיון</span>
+      <div class="chips">${IDEA_STARTS.map((x, i) => `<button type="button" class="chip-btn" data-start="${i}">${esc(x.he)}</button>`).join('')}</div>
+    </div>
+    <button type="submit" class="btn btn-primary" id="idea-go">מצאו לי רעיונות</button>
+  </form>
+  <div id="idea-out" aria-live="polite"></div>
+</section>`;
+
+function renderIdeaOut(q, fallbackHe) {
+  const out = $('#idea-out'); if (!out) return;
+  if (fallbackHe) {
+    const qq = `${fallbackHe} קעקוע`;
+    out.innerHTML = `<div class="card stack"><p>לא הצלחנו לתרגם כרגע, אז נחפש בעברית (פחות תוצאות).</p>
+      <a class="btn btn-pin" href="${pinUrl(qq)}" target="_blank" rel="noopener">פתיחה בפינטרסט</a></div>`;
+    return;
+  }
+  out.innerHTML = `
+  <div class="stack" style="gap:14px">
+    <div class="card stack" style="gap:6px">
+      <span style="color:var(--acc);font-weight:700;font-size:.85rem">מה נחפש בפינטרסט</span>
+      <span class="en-query" dir="ltr">${esc(q.main)}</span>
+      <span class="muted" style="font-size:.85rem">תרגמנו למילים שמקעקעים משתמשים בהן והוספנו tattoo.</span>
+    </div>
+    <div class="stack" style="gap:8px">
+      <span style="font-weight:700">סגנון (לא חובה)</span>
+      <div class="chips">${IDEA_STYLES.map((x) => `<button type="button" class="chip-btn" data-style="${esc(x.en)}" aria-pressed="${ideaState.style === x.en}">${esc(x.he)}</button>`).join('')}</div>
+    </div>
+    ${q.alts.length ? `<div class="stack" style="gap:8px"><span style="font-weight:700">עוד כיוונים</span>
+      ${q.alts.map((a) => `<a class="alt-link" href="${pinUrl(a)}" target="_blank" rel="noopener"><span dir="ltr">${esc(a)}</span>${icon.fwd}</a>`).join('')}</div>` : ''}
+    <a class="btn btn-pin" href="${pinUrl(q.main)}" target="_blank" rel="noopener">פתיחה בפינטרסט</a>
+    <p class="muted" style="text-align:center;font-size:.85rem">מצאתם משהו? שמרו צילום מסך וצרפו אותו ל<a href="#/contact">פנייה לתום</a>.</p>
+  </div>`;
+  $$('#idea-out [data-style]').forEach((b) => b.addEventListener('click', () => {
+    ideaState.style = ideaState.style === b.dataset.style ? '' : b.dataset.style;
+    renderIdeaOut(buildQueries(ideaState.parts, ideaState.style));
+  }));
+}
+
+binders.ideas = () => {
+  const ta = $('#idea-text');
+  $$('[data-start]').forEach((b) => b.addEventListener('click', () => {
+    const x = IDEA_STARTS[Number(b.dataset.start)];
+    ideaState.text = x.he; ta.value = x.he; ideaState.parts = { nouns: cleanQuery(x.en), mods: [], body: [] }; ideaState.style = '';
+    renderIdeaOut(buildQueries(ideaState.parts, ''));
+    $('#idea-out').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }));
+  $('#idea-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const he = ta.value.trim(); ideaState.text = he;
+    if (!he) { ta.focus(); announce('כתבו רעיון קצר'); return; }
+    const btn = $('#idea-go'); btn.disabled = true; btn.textContent = 'מתרגם…';
+    const parts = await translateIdea(he);
+    btn.disabled = false; btn.textContent = 'מצאו לי רעיונות';
+    if (!parts || !(parts.nouns.length + parts.mods.length + parts.body.length)) { renderIdeaOut(null, he); return; }
+    ideaState.parts = parts;
+    renderIdeaOut(buildQueries(parts, ideaState.style));
+    $('#idea-out').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+};
 
 // ---------------------------------------------------------------------
 // מבצע החודש – תום מעדכנת בדף הניהול שלה, והאפליקציה מציגה חלון פעם אחת לכל מבצע

@@ -332,3 +332,14 @@ dialog.promo-dlg::backdrop { background: rgba(6,5,8,.72); }
 .btn-ghost { background: transparent; border: 0; color: var(--muted); min-height: 44px; }
 .promo-body h2:focus { outline: none; }
 #push-t:focus { outline: none; }
+
+/* ===== רעיונות מפינטרסט ===== */
+.tint-violet { background: #221F45; border-color: #5B4BC4; color: #DCD7FF; }
+.tint-violet .chip { background: #5B4BC4; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-btn { min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1.5px solid var(--fline); background: var(--surface); color: var(--ink); cursor: pointer; }
+.chip-btn[aria-pressed="true"] { border-color: var(--pri); background: var(--pri-soft); font-weight: 700; }
+.en-query { font-size: 1.1rem; font-weight: 700; text-align: left; line-height: 1.4; }
+.alt-link { min-height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); display: flex; align-items: center; justify-content: space-between; text-decoration: none; }
+.alt-link svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
+.btn-pin { background: #E60023; color: #fff; }
