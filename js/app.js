@@ -441,6 +441,7 @@ binders.done = (kind) => {
     e.target.disabled = true; e.target.textContent = 'שולח…';
     sendHealth(state.lastHealth).then(render);
   });
+  setTimeout(maybeAskPush, 1500);
 };
 
 // ---- טופס פנייה ----
@@ -860,7 +861,7 @@ function maybeShowPromo() {
       <button type="button" class="btn btn-ghost promo-later">אולי אחר כך</button>
     </div>`;
   document.body.appendChild(dlg);
-  const close = () => { dlg.close(); dlg.remove(); if (location.hash.startsWith('#/promo')) history.replaceState(null, '', '#/'); };
+  const close = () => { dlg.close(); dlg.remove(); if (location.hash.startsWith('#/promo')) history.replaceState(null, '', '#/'); setTimeout(maybeAskPush, 600); };
   $('.promo-x', dlg).addEventListener('click', close);
   $('.promo-later', dlg).addEventListener('click', close);
   dlg.addEventListener('cancel', (e) => { e.preventDefault(); close(); });
@@ -870,9 +871,77 @@ function maybeShowPromo() {
   $('#promo-t', dlg).setAttribute('tabindex', '-1'); $('#promo-t', dlg).focus();
 }
 
+// ---------------------------------------------------------------------
+// התראות על מבצעים (OneSignal): אנדרואיד – תוסף מובנה; אתר/אייפון – Web Push
+// ---------------------------------------------------------------------
+const push = { os: null, native: false };
+function initPush() {
+  const appId = CONFIG.onesignalAppId; if (!appId) return;
+  if (isNative) {
+    const go = () => {
+      const OS = window.OneSignal; if (!OS || !OS.initialize) return false;
+      try {
+        OS.initialize(appId);
+        OS.Location?.setShared?.(false);
+        OS.Notifications.addEventListener('click', () => { location.hash = '#/promo'; });
+        push.os = OS; push.native = true;
+      } catch (e) { /* לא נורא – בלי התראות */ }
+      return true;
+    };
+    if (!go()) document.addEventListener('deviceready', go, { once: true });
+    return;
+  }
+  if (!('Notification' in window) || !('serviceWorker' in navigator) || location.protocol !== 'https:') return;
+  if (isIOS && !isStandalone) return; // באייפון התראות עובדות רק מהאפליקציה שבמסך הבית
+  const base = location.pathname.replace(/[^/]*$/, '');
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  window.OneSignalDeferred.push(async (OS) => {
+    await OS.init({ appId, serviceWorkerPath: base.slice(1) + 'sw.js', serviceWorkerParam: { scope: base } });
+    OS.Notifications.addEventListener('click', () => { location.hash = '#/promo'; });
+    push.os = OS;
+  });
+  const sc = document.createElement('script');
+  sc.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js'; sc.defer = true;
+  document.head.appendChild(sc);
+}
+
+async function pushGranted() {
+  const OS = push.os; if (!OS) return true;
+  try { return push.native ? await OS.Notifications.hasPermission() : !!OS.Notifications.permission; } catch (e) { return true; }
+}
+
+async function maybeAskPush() {
+  if (!push.os || $('#push-dlg') || $('#promo-dlg') || store.get('tt-push-asked')) return;
+  if (await pushGranted()) return;
+  store.set('tt-push-asked', '1');
+  const dlg = document.createElement('dialog');
+  dlg.id = 'push-dlg'; dlg.className = 'promo-dlg push-dlg'; dlg.setAttribute('aria-labelledby', 'push-t');
+  dlg.innerHTML = `
+    <div class="promo-body">
+      <h2 id="push-t" tabindex="-1">לשמוע ראשונים על מבצעים?</h2>
+      <p class="promo-text">תום שולחת התראה רק כשיש מבצע חדש – בערך פעם בחודש. בלי ספאם, ואפשר לכבות בכל רגע.</p>
+      <button type="button" class="btn btn-primary" id="push-yes">כן, תעדכנו אותי</button>
+      <button type="button" class="btn btn-ghost" id="push-no">לא עכשיו</button>
+    </div>`;
+  document.body.appendChild(dlg);
+  const close = () => { dlg.close(); dlg.remove(); };
+  $('#push-no', dlg).addEventListener('click', close);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); close(); });
+  $('#push-yes', dlg).addEventListener('click', async () => {
+    close();
+    try {
+      if (push.native) await push.os.Notifications.requestPermission(true);
+      else await push.os.Notifications.requestPermission();
+    } catch (e) { /* המשתמש סירב או שהדפדפן לא תומך */ }
+  });
+  if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+  $('#push-t', dlg).focus();
+}
+
 syncTop();
 playIntro();
 loadPromo();
+initPush();
 setTimeout(showInstallTip, 3800);
 window.addEventListener('hashchange', render);
 render();

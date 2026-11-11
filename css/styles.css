@@ -331,3 +331,4 @@ dialog.promo-dlg::backdrop { background: rgba(6,5,8,.72); }
 .promo-body .btn { margin-top: 4px; }
 .btn-ghost { background: transparent; border: 0; color: var(--muted); min-height: 44px; }
 .promo-body h2:focus { outline: none; }
+#push-t:focus { outline: none; }

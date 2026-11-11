@@ -1,6 +1,8 @@
 // Service worker – עבודה גם בלי אינטרנט.
 // אחרי כל שינוי בקבצים כדאי להעלות את מספר הגרסה כדי שהטלפונים יקבלו את העדכון.
-const VERSION = 'tomchu-v12';
+// התראות (OneSignal) – אותו service worker משמש גם להתראות על מבצעים
+try { importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js'); } catch (e) { /* בלי רשת – רק מטמון */ }
+const VERSION = 'tomchu-v13';
 const CORE = [
   './', 'index.html', 'install.html', 'privacy.html', 'css/styles.css', 'js/app.js', 'js/content.js', 'manifest.webmanifest',
   'assets/img/logo-dark.png', 'assets/img/tom-studio.jpg',

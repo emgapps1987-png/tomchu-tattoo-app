@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 4; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש
+var SCRIPT_VERSION = 5; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -258,7 +258,8 @@ function sendPush_(promo) {
     headers: { Authorization: 'Key ' + keys.key },
     payload: JSON.stringify({
       app_id: keys.id,
-      included_segments: ['Subscribed Users'],
+      target_channel: 'push',
+      included_segments: ['Total Subscriptions'],
       headings: { en: 'מבצע החודש אצל תום ✦', he: 'מבצע החודש אצל תום ✦' },
       contents: { en: promo.title, he: promo.title },
       data: { promo: promo.id },

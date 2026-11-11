@@ -19,7 +19,9 @@ export const CONFIG = {
   // כל עוד הן ריקות – הטפסים נשלחים לתום בוואטסאפ (מצב בדיקות).
   // הוראות הקמה: docs/google-apps-script.md
   contactEndpoint: '',
-  healthEndpoint: 'https://script.google.com/macros/s/AKfycbx8Fdjy-R1BFsbZRwoc3WbTqR8FzpORe76ot9fpKa5OLgF-ReHm8WbvalKR26HcqtckBw/exec'
+  healthEndpoint: 'https://script.google.com/macros/s/AKfycbx8Fdjy-R1BFsbZRwoc3WbTqR8FzpORe76ot9fpKa5OLgF-ReHm8WbvalKR26HcqtckBw/exec',
+  // התראות על מבצעים (OneSignal) – App ID אינו סודי
+  onesignalAppId: '7ab14748-0a18-438c-8c1e-0a5698cfc52d'
 };
 
 export const TAGS = { fine: 'קו עדין', sketch: 'סקיצה', color: 'צבע', studio: 'בסטודיו' };
