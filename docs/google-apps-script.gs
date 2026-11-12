@@ -309,14 +309,14 @@ function aiModels_(apiKey) {
     if (res.getResponseCode() === 200) {
       var all = (JSON.parse(res.getContentText()).models || []).filter(function (m) {
         return (m.supportedGenerationMethods || []).indexOf('generateContent') >= 0 &&
-          /flash/i.test(m.name) && !/(image|tts|audio|live|thinking|exp|preview|lite)/i.test(m.name);
+          /^models\/gemini-\d+(\.\d+)?-flash$/.test(m.name); // רק Flash רגיל ויציב, למשל gemini-3.8-flash
       }).map(function (m) { return m.name; });
-      all.sort(function (a, b) { return b.localeCompare(a, 'en', { numeric: true }); }); // הגרסה החדשה ראשונה
-      var latest = all.filter(function (n) { return /latest/.test(n); });
-      list = list.concat(latest, all);
+      var ver = function (n) { return parseFloat(n.replace(/^models\/gemini-/, '')); };
+      all.sort(function (a, b) { return ver(b) - ver(a); }); // הגרסה החדשה ראשונה
+      list = list.concat(all);
     }
   } catch (e) {}
-  list = list.concat(['models/gemini-flash-latest', 'models/gemini-2.5-flash']);
+  list = list.concat(['models/gemini-2.5-flash']);
   return list.filter(function (n, i) { return list.indexOf(n) === i; });
 }
 
@@ -331,6 +331,9 @@ function testGemini() {
   var names = (JSON.parse(res.getContentText()).models || []).map(function (m) { return m.name; });
   Logger.log(names.join('\n'));
   Logger.log('order: ' + aiModels_(apiKey).join(', '));
+  var t1 = Date.now();
+  var out = aiWrite(PropertiesService.getScriptProperties().getProperty('ADMIN_KEY'), { idea: '10% הנחה על קעקוע קטן, עד סוף החודש' });
+  Logger.log('write in ' + (Date.now() - t1) + 'ms: ' + JSON.stringify(out));
 }
 
 function aiWrite(k, d) {
@@ -351,7 +354,7 @@ function aiWrite(k, d) {
   };
   var models = aiModels_(apiKey);
   var lastErr = '';
-  for (var i = 0; i < models.length && i < 4; i++) {
+  for (var i = 0; i < models.length && i < 3; i++) {
     var res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/' + models[i] + ':generateContent', {
       method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': apiKey },
       payload: JSON.stringify(payload), muteHttpExceptions: true
