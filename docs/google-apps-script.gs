@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 10; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית
+var SCRIPT_VERSION = 11; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -301,8 +301,7 @@ function aiPromptText_(idea, until) {
 
 // מוצא את מודלי ה־Flash הזמינים כרגע במפתח (שמות המודלים משתנים מדי פעם)
 function aiModels_(apiKey) {
-  var cached = CacheService.getScriptCache().get('gemini-model');
-  var list = cached ? [cached] : [];
+  var list = [];
   try {
     var res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', {
       headers: { 'x-goog-api-key': apiKey }, muteHttpExceptions: true });
@@ -313,7 +312,7 @@ function aiModels_(apiKey) {
       }).map(function (m) { return m.name; });
       var ver = function (n) { return parseFloat(n.replace(/^models\/gemini-/, '')); };
       all.sort(function (a, b) { return ver(b) - ver(a); }); // הגרסה החדשה ראשונה
-      list = list.concat(all);
+      list = list.concat(all.slice(0, 1));
     }
   } catch (e) {}
   list = list.concat(['models/gemini-2.5-flash']);
@@ -355,13 +354,19 @@ function aiWrite(k, d) {
   var models = aiModels_(apiKey);
   var lastErr = '';
   for (var i = 0; i < models.length && i < 3; i++) {
-    var res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/' + models[i] + ':generateContent', {
-      method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': apiKey },
-      payload: JSON.stringify(payload), muteHttpExceptions: true
-    });
+    var v = parseFloat(models[i].replace(/^models\/gemini-/, ''));
+    // חשיבה קצרה = תשובה מהירה (טקסט פרסומי לא צריך חשיבה ארוכה)
+    payload.generationConfig.thinkingConfig = v >= 3 ? { thinkingLevel: 'low' } : { thinkingBudget: 0 };
+    var call = function () {
+      return UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/' + models[i] + ':generateContent', {
+        method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': apiKey },
+        payload: JSON.stringify(payload), muteHttpExceptions: true
+      });
+    };
+    var res = call();
+    if (res.getResponseCode() === 400) { delete payload.generationConfig.thinkingConfig; res = call(); }
     var code = res.getResponseCode();
     if (code === 200) {
-      CacheService.getScriptCache().put('gemini-model', models[i], 21600);
       var j = JSON.parse(res.getContentText());
       var txt = j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts[0].text;
       var arr = JSON.parse(txt || '[]');
