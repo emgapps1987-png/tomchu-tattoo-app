@@ -386,7 +386,7 @@ views.accessibility = () => `
   <div class="stack"><h2>מה עשינו</h2>
     <ul class="muted" style="margin:0;padding-inline-start:20px;display:flex;flex-direction:column;gap:4px">
       <li>כפתור "טקסט גדול" להגדלת כל הטקסטים</li>
-      <li>מצב כהה ומצב בהיר, עם ניגודיות צבעים תקינה בשניהם</li>
+      <li>ניגודיות צבעים גבוהה בין הטקסט לרקע</li>
       <li>ניווט מלא במקלדת ותמיכה בקוראי מסך</li>
       <li>תיאור טקסטואלי לתמונות</li>
       <li>כפתורים ואזורי לחיצה גדולים</li>
@@ -396,7 +396,7 @@ views.accessibility = () => `
   <div class="stack"><h2>נתקלתם בבעיה?</h2>
     <p>נשמח לשמוע ולתקן. רכזת הנגישות: תום גבע · <a href="tel:${CONFIG.phoneDisplay.replace(/-/g, '')}">${CONFIG.phoneDisplay}</a> · <a href="mailto:${CONFIG.email}">${CONFIG.email}</a></p>
   </div>
-  <div class="stack"><h2>נגישות הסטודיו</h2><p class="muted">[להשלמה על ידי תום: האם יש מדרגות בכניסה, חניה צמודה ונגישות לכיסא גלגלים.]</p></div>
+  <div class="stack"><h2>נגישות הסטודיו</h2><p class="muted">צריכים התאמה כלשהי להגעה לסטודיו או במהלך הקעקוע? ספרו לתום מראש בטלפון או בוואטסאפ, ונדאג שיהיה לכם נוח.</p></div>
   <p class="hint">עודכן לאחרונה: נובמבר 2026</p>
 </section>`;
 

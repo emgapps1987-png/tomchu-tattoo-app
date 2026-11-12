@@ -13,16 +13,50 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 6; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט
+var SCRIPT_VERSION = 7; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
 
+// הגבלות אבטחה
+var MAX_BODY = 1500000;     // גודל מקסימלי של הצהרה (כולל חתימה) – בערך 1.5MB
+var MAX_PER_HOUR = 30;      // מקסימום הצהרות בשעה, נגד הצפה
+var SIG_RE = /^data:image\/png;base64,[A-Za-z0-9+\/]+={0,2}$/;
+
+// ערך שמתחיל ב־= + - @ ייכנס לגיליון כטקסט ולא כנוסחה
+function cell_(v) {
+  if (v == null) return '';
+  if (typeof v === 'number' || typeof v === 'boolean') return v;
+  var s = String(v).slice(0, 2000);
+  return /^[=+\-@\t\r]/.test(s) ? "'" + s : s;
+}
+
+function rateOk_() {
+  var cache = CacheService.getScriptCache();
+  var k = 'posts-' + Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'yyyyMMddHH');
+  var n = Number(cache.get(k) || 0) + 1;
+  cache.put(k, String(n), 3700);
+  return n <= MAX_PER_HOUR;
+}
+
 function doPost(e) {
   try {
-    var d = JSON.parse(e.postData.contents);
+    var body = (e && e.postData && e.postData.contents) || '';
+    if (body.length > MAX_BODY) return json_({ ok: false, error: 'too large' });
+    if (!rateOk_()) return json_({ ok: false, error: 'busy' });
+    var d = JSON.parse(body);
     if (d.kind !== 'health') return json_({ ok: false, error: 'unknown kind' });
-    if (!d.name || !d.signature || !d.answers) return json_({ ok: false, error: 'missing fields' });
+    if (!d.name || !d.signature || !Array.isArray(d.answers)) return json_({ ok: false, error: 'missing fields' });
+    if (!SIG_RE.test(String(d.signature))) return json_({ ok: false, error: 'bad signature' });
+    d.answers = d.answers.slice(0, 60);
+    d.extraFields = Array.isArray(d.extraFields) ? d.extraFields.slice(0, 20) : [];
+    d.consents = Array.isArray(d.consents) ? d.consents.slice(0, 20) : [];
+    d.flags = Array.isArray(d.flags) ? d.flags.slice(0, 60) : [];
+    // הסטטוס לא נסמך רק על הטלפון: כל תשובת "כן" מסמנת לפחות "לבדיקה"
+    var yesCount = d.answers.filter(function (a) { return a && a.a === 'כן'; }).length;
+    if (d.flags.some(function (f) { return f && f.level === 'stop'; })) d.review = 'stop';
+    if (d.review !== 'stop' && (yesCount || d.minor)) d.review = 'check';
+    if (d.review !== 'stop' && d.review !== 'check') d.review = '';
 
     var when = Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'dd/MM/yyyy HH:mm');
     var html = declarationHtml_(d, when);
@@ -53,18 +87,19 @@ function doPost(e) {
     d.answers.forEach(function (a) { head.push(a.q); });
     head = head.concat(['פירוט', 'קטין', 'הורה/אפוטרופוס', 'אישור פרסום', 'קובץ PDF']);
     var status = review === 'stop' ? '⛔ לא לקעקע עד בירור' : review === 'check' ? '⚠ לבדיקה' : '✔ תקין';
-    var row = [when, status, d.name, "'" + (d.idnum || ''), d.dob, d.age, "'" + d.phone, d.email, d.tattooDate, d.area];
-    (d.extraFields || []).forEach(function (x) { row.push(x.value); });
-    d.answers.forEach(function (a) { row.push(a.a); });
-    var pub = (d.consents || []).filter(function (c) { return c.id === 'c4'; })[0];
-    row = row.concat([d.details || '', d.minor ? 'כן' : 'לא',
-      d.parent ? (d.parent.name + ' / ' + d.parent.id + ' / ' + d.parent.phone) : '',
+    var row = [when, status, cell_(d.name), "'" + String(d.idnum || ''), cell_(d.dob), cell_(d.age), "'" + String(d.phone || ''), cell_(d.email), cell_(d.tattooDate), cell_(d.area)];
+    (d.extraFields || []).forEach(function (x) { row.push(cell_(x && x.value)); });
+    d.answers.forEach(function (a) { row.push(cell_(a && a.a)); });
+    var pub = (d.consents || []).filter(function (c) { return c && c.id === 'c4'; })[0];
+    row = row.concat([cell_(d.details || ''), d.minor ? 'כן' : 'לא',
+      d.parent ? cell_(d.parent.name + ' / ' + d.parent.id + ' / ' + d.parent.phone) : '',
       pub && pub.ok ? 'כן' : 'לא', file.getUrl()]);
-    sheet_(head).appendRow(row);
+    sheet_(head.map(cell_)).appendRow(row);
 
     return json_({ ok: true });
   } catch (err) {
-    return json_({ ok: false, error: String(err) });
+    console.error(err);
+    return json_({ ok: false, error: 'server error' });
   }
 }
 
@@ -161,7 +196,7 @@ function doGet(e) {
     var q = String(p.q || '').slice(0, 200);
     if (!q) return json_({ ok: false });
     try { return json_({ ok: true, text: LanguageApp.translate(q, 'iw', 'en') }); }
-    catch (err) { return json_({ ok: false, error: String(err) }); }
+    catch (err) { return json_({ ok: false }); }
   }
   if (p.admin) {
     if (!isAdminKey_(p.admin)) return HtmlService.createHtmlOutput('<p dir="rtl" style="font-family:Arial;font-size:18px;padding:24px">אין גישה.</p>');
@@ -304,7 +339,7 @@ var ADMIN_HTML_ = '<!doctype html><html lang="he" dir="rtl"><head><meta charset=
 '<button class="pri" type="submit">לפרסם את המבצע</button>' +
 '<button class="sec" type="button" id="end">להוריד את המבצע</button>' +
 '<p id="msg" role="status"></p>' +
-'<p class="muted">אחרי תאריך התוקף המבצע יורד לבד. כל מי שנכנס לאפליקציה רואה את החלון פעם אחת לכל מבצע.</p>' +
+'<p class="muted"><b>חשוב לפי חוק:</b> לכתוב בתיאור את כל התנאים (למשל "לקעקוע ראשון בלבד", "לא כולל כיסוי"). אחרי תאריך התוקף המבצע יורד לבד. כל מי שנכנס לאפליקציה רואה את החלון פעם אחת לכל מבצע.</p>' +
 '</form></main>' +
 '<script>' +
 'var KEY=<?!= JSON.stringify(key) ?>;var CUR=<?!= promoJson ?>;var imgData=null;' +
