@@ -378,7 +378,7 @@ function aiWrite(k, d) {
     console.warn(models[i] + ' -> ' + code + ' ' + res.getContentText().slice(0, 300));
     if (code === 401 || code === 403) break; // מפתח לא תקין – אין טעם לנסות מודל אחר
   }
-  throw new Error(lastErr === 429 ? 'Gemini עמוס כרגע – נסי שוב בעוד דקה' : 'Gemini לא ענה (' + lastErr + ')');
+  throw new Error(lastErr === 429 || lastErr === 503 ? 'Gemini עמוס כרגע אצל גוגל – נסי שוב בעוד כמה דקות, או השתמשי בכפתור "להעתיק ולפתוח את Gemini"' : 'Gemini לא ענה (' + lastErr + ')');
 }
 
 function pushKeys_() {
