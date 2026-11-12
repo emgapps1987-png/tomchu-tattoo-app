@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 7; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה
+var SCRIPT_VERSION = 8; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -310,6 +310,32 @@ function sendPush_(promo) {
   return res.getResponseCode() < 300 ? 'sent' : 'error ' + res.getResponseCode();
 }
 
+// עזרה בכתיבה עם Gemini – בונה הנחיה מוכנה, מעתיקה אותה ופותחת את Gemini
+var AI_JS_ = [
+  'function aiPrompt(){',
+  '  var idea=document.getElementById("ai-idea").value.trim()||document.getElementById("text").value.trim()||document.getElementById("title").value.trim();',
+  '  var u=document.getElementById("until").value;var until=u?u.split("-").reverse().join("/"):"(עוד לא נקבע)";',
+  '  return ["את/ה קופירייטר/ית לסטודיו קעקועים קטן ואישי בשם Tomchu Tattoo, של תום גבע באלפי מנשה.",',
+  '    "כתוב/י טקסט ל\\"מבצע החודש\\" שמופיע באפליקציה של הסטודיו, ונשלח גם כהתראה לטלפון.","",',
+  '    "המבצע: "+(idea||"[לכתוב כאן מה המבצע]"),"בתוקף עד: "+until,"",',
+  '    "צריך 3 גרסאות שונות. בכל גרסה:",',
+  '    "1. כותרת – עד 60 תווים, קליטה",',
+  '    "2. תיאור – 2–3 שורות, עד 350 תווים, חם ואישי, בגוף ראשון של תום (לשון נקבה), עם הנעה לפעולה (לקבוע תור בוואטסאפ)","",',
+  '    "חשוב: לכתוב בבירור את כל תנאי המבצע ואת תאריך התוקף, בלי הבטחות מוגזמות ובלי \\"הכי זול\\" (חוק הגנת הצרכן). עברית טבעית, אימוג׳י אחד או שניים לכל היותר."].join("\\n");',
+  '}',
+  'function aiDone(ok){document.getElementById("ai-msg").innerHTML=ok?"✔ ההנחיה הועתקה. ב־Gemini לוחצים בתיבת הכתיבה, <b>מדביקים</b> ושולחים. את הגרסה שאהבת מעתיקים לשדות הכותרת והתיאור למעלה.":"לא הצלחתי להעתיק אוטומטית – פתחי את \\"מה נשלח ל־Gemini?\\", העתיקי את הטקסט והדביקי ב־Gemini.";}',
+  'function aiRefresh(){document.getElementById("ai-prompt").value=aiPrompt();}',
+  'function aiCopyOld(t){var ta=document.createElement("textarea");ta.value=t;ta.setAttribute("readonly","");ta.style.position="fixed";ta.style.top="0";ta.style.opacity="0";document.body.appendChild(ta);ta.select();var ok=false;try{ok=document.execCommand("copy");}catch(e){}document.body.removeChild(ta);return ok;}',
+  '(function(){',
+  '  ["ai-idea","title","text","until"].forEach(function(i){document.getElementById(i).addEventListener("input",aiRefresh);});aiRefresh();',
+  '  document.getElementById("ai-go").addEventListener("click",function(){aiRefresh();var t=document.getElementById("ai-prompt").value;',
+  '    var ok=aiCopyOld(t);if(!ok&&navigator.clipboard){navigator.clipboard.writeText(t).then(function(){aiDone(true);},function(){});}',
+  '    aiDone(ok);var w=window.open("https://gemini.google.com/app","_blank");',
+  '    if(!w){document.getElementById("ai-msg").innerHTML+=" <a href=\\"https://gemini.google.com/app\\" target=\\"_blank\\" rel=\\"noopener\\">לפתיחת Gemini</a>";}',
+  '  });',
+  '})();'
+].join('\n');
+
 var ADMIN_HTML_ = '<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><base target="_top">' +
 '<style>' +
 '*{box-sizing:border-box}body{margin:0;background:#0B0A0D;color:#F4EFF4;font-family:Arial,sans-serif;font-size:16px}' +
@@ -340,8 +366,17 @@ var ADMIN_HTML_ = '<!doctype html><html lang="he" dir="rtl"><head><meta charset=
 '<button class="sec" type="button" id="end">להוריד את המבצע</button>' +
 '<p id="msg" role="status"></p>' +
 '<p class="muted"><b>חשוב לפי חוק:</b> לכתוב בתיאור את כל התנאים (למשל "לקעקוע ראשון בלבד", "לא כולל כיסוי"). אחרי תאריך התוקף המבצע יורד לבד. כל מי שנכנס לאפליקציה רואה את החלון פעם אחת לכל מבצע.</p>' +
-'</form></main>' +
+'</form>' +
+'<section class="cur" aria-labelledby="ai-h" style="display:flex;flex-direction:column;gap:12px">' +
+'<h2 id="ai-h" style="margin:0;font-size:19px">✨ עזרה בכתיבה עם Gemini</h2>' +
+'<p class="muted" style="margin:0">כותבים במילים פשוטות מה המבצע. Gemini יציע כותרת וטקסט פרסומי, ואת מה שאהבת מעתיקים לשדות למעלה.</p>' +
+'<div><label for="ai-idea">על מה המבצע? (במילים שלך)</label><textarea id="ai-idea" maxlength="300" placeholder="למשל: 15% הנחה על קעקוע ראשון, רק עד סוף החודש, לא כולל כיסויים"></textarea></div>' +
+'<button class="pri" type="button" id="ai-go" style="background:#1A73E8">להעתיק ולפתוח את Gemini</button>' +
+'<p id="ai-msg" class="muted" role="status" style="margin:0"></p>' +
+'<details><summary class="muted" style="cursor:pointer">מה נשלח ל־Gemini?</summary><textarea id="ai-prompt" readonly style="margin-top:8px;min-height:160px;font-size:14px"></textarea></details>' +
+'</section></main>' +
 '<script>' +
+AI_JS_ +
 'var KEY=<?!= JSON.stringify(key) ?>;var CUR=<?!= promoJson ?>;var imgData=null;' +
 'function $(i){return document.getElementById(i)}' +
 'function showCur(p){var c=$("current");if(!p||!p.active){c.innerHTML="<b>אין מבצע פעיל כרגע.</b>";return;}' +
