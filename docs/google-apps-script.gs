@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 8; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini
+var SCRIPT_VERSION = 9; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -204,6 +204,7 @@ function doGet(e) {
     t.key = p.admin;
     t.promoJson = JSON.stringify(currentPromo_() || null);
     t.pushReady = !!pushKeys_();
+    t.aiReady = !!PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
     return t.evaluate().setTitle('מבצע החודש – Tomchu')
       .addMetaTag('viewport', 'width=device-width, initial-scale=1')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
@@ -285,6 +286,57 @@ function endPromo(key) {
 //   ONESIGNAL_APP_ID, ONESIGNAL_API_KEY
 // כל עוד הם לא מוגדרים – המבצע מתפרסם בלי התראה.
 // ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+// כתיבת טקסט למבצע עם Gemini (מפתח API בהגדרות הסקריפט: GEMINI_API_KEY)
+// ---------------------------------------------------------------------
+function aiPromptText_(idea, until) {
+  return ['את/ה קופירייטר/ית לסטודיו קעקועים קטן ואישי בשם Tomchu Tattoo, של תום גבע באלפי מנשה.',
+    'כתוב/י טקסט ל"מבצע החודש" שמופיע באפליקציה של הסטודיו, ונשלח גם כהתראה לטלפון.', '',
+    'המבצע: ' + idea, 'בתוקף עד: ' + (until || 'לא צוין'), '',
+    'צריך 3 גרסאות שונות זו מזו בסגנון. בכל גרסה:',
+    'title – כותרת קליטה, עד 60 תווים',
+    'text – תיאור של 2–3 שורות, עד 350 תווים, חם ואישי, בגוף ראשון של תום (לשון נקבה), עם הנעה לפעולה (לקבוע תור בוואטסאפ)', '',
+    'חשוב: לכתוב בבירור את כל תנאי המבצע ואת תאריך התוקף, בלי הבטחות מוגזמות ובלי "הכי זול" (חוק הגנת הצרכן). עברית טבעית, אימוג׳י אחד או שניים לכל היותר.'].join('\n');
+}
+
+function aiWrite(k, d) {
+  if (!isAdminKey_(k)) throw new Error('אין הרשאה');
+  var apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  if (!apiKey) throw new Error('Gemini עוד לא מחובר');
+  var idea = String((d && d.idea) || '').trim().slice(0, 400);
+  if (!idea) throw new Error('כתבי קודם על מה המבצע');
+  var until = String((d && d.until) || '').split('-').reverse().join('/');
+  var payload = {
+    contents: [{ role: 'user', parts: [{ text: aiPromptText_(idea, until) }] }],
+    generationConfig: {
+      temperature: 0.9,
+      responseMimeType: 'application/json',
+      responseSchema: { type: 'ARRAY', items: { type: 'OBJECT',
+        properties: { title: { type: 'STRING' }, text: { type: 'STRING' } }, required: ['title', 'text'] } }
+    }
+  };
+  var models = ['gemini-flash-latest', 'gemini-2.5-flash'];
+  var lastErr = '';
+  for (var i = 0; i < models.length; i++) {
+    var res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + models[i] + ':generateContent', {
+      method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': apiKey },
+      payload: JSON.stringify(payload), muteHttpExceptions: true
+    });
+    var code = res.getResponseCode();
+    if (code === 200) {
+      var j = JSON.parse(res.getContentText());
+      var txt = j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts[0].text;
+      var arr = JSON.parse(txt || '[]');
+      return arr.slice(0, 3).map(function (o) {
+        return { title: String(o.title || '').slice(0, 80), text: String(o.text || '').slice(0, 400) };
+      });
+    }
+    lastErr = code;
+    if (code === 400 || code === 401 || code === 403) break; // מפתח לא תקין – אין טעם לנסות מודל אחר
+  }
+  throw new Error(lastErr === 429 ? 'Gemini עמוס כרגע – נסי שוב בעוד דקה' : 'Gemini לא ענה (' + lastErr + ')');
+}
+
 function pushKeys_() {
   var props = PropertiesService.getScriptProperties();
   var id = props.getProperty('ONESIGNAL_APP_ID'), k = props.getProperty('ONESIGNAL_API_KEY');
@@ -333,6 +385,18 @@ var AI_JS_ = [
   '    aiDone(ok);var w=window.open("https://gemini.google.com/app","_blank");',
   '    if(!w){document.getElementById("ai-msg").innerHTML+=" <a href=\\"https://gemini.google.com/app\\" target=\\"_blank\\" rel=\\"noopener\\">לפתיחת Gemini</a>";}',
   '  });',
+  'var aw=document.getElementById("ai-write");if(aw){aw.addEventListener("click",function(){',
+  '  var idea=document.getElementById("ai-idea").value.trim()||document.getElementById("text").value.trim();var out=document.getElementById("ai-out");var msg=document.getElementById("ai-msg");',
+  '  if(!idea){msg.textContent="כתבי קודם במילים שלך על מה המבצע.";document.getElementById("ai-idea").focus();return;}',
+  '  aw.disabled=true;aw.textContent="Gemini כותב…";msg.textContent="";out.innerHTML="";',
+  '  google.script.run.withSuccessHandler(function(list){aw.disabled=false;aw.textContent="✨ עוד הצעות";',
+  '    if(!list||!list.length){msg.textContent="לא התקבלו הצעות, נסי שוב.";return;}msg.textContent="בחרי גרסה – היא תיכנס לשדות למעלה, ואפשר לערוך לפני שמפרסמים.";',
+  '    list.forEach(function(o){var c=document.createElement("div");c.style.cssText="padding:12px 14px;border-radius:12px;background:#17141A;border:1px solid #4A3F50;display:flex;flex-direction:column;gap:6px";',
+  '      var b=document.createElement("b");b.textContent=o.title;var p=document.createElement("div");p.style.cssText="line-height:1.5;white-space:pre-line";p.textContent=o.text;',
+  '      var u=document.createElement("button");u.type="button";u.className="sec";u.textContent="להשתמש בזה";u.addEventListener("click",function(){document.getElementById("title").value=o.title;document.getElementById("text").value=o.text;aiRefresh();document.getElementById("title").scrollIntoView({behavior:"smooth",block:"center"});msg.textContent="✔ הטקסט הוכנס לשדות למעלה.";});',
+  '      c.appendChild(b);c.appendChild(p);c.appendChild(u);out.appendChild(c);});})',
+  '  .withFailureHandler(function(err){aw.disabled=false;aw.textContent="✨ לכתוב לי עם Gemini";msg.textContent="שגיאה: "+err.message;})',
+  '  .aiWrite(KEY,{idea:idea,until:document.getElementById("until").value});});}',
   '})();'
 ].join('\n');
 
@@ -371,7 +435,9 @@ var ADMIN_HTML_ = '<!doctype html><html lang="he" dir="rtl"><head><meta charset=
 '<h2 id="ai-h" style="margin:0;font-size:19px">✨ עזרה בכתיבה עם Gemini</h2>' +
 '<p class="muted" style="margin:0">כותבים במילים פשוטות מה המבצע. Gemini יציע כותרת וטקסט פרסומי, ואת מה שאהבת מעתיקים לשדות למעלה.</p>' +
 '<div><label for="ai-idea">על מה המבצע? (במילים שלך)</label><textarea id="ai-idea" maxlength="300" placeholder="למשל: 15% הנחה על קעקוע ראשון, רק עד סוף החודש, לא כולל כיסויים"></textarea></div>' +
-'<button class="pri" type="button" id="ai-go" style="background:#1A73E8">להעתיק ולפתוח את Gemini</button>' +
+'<? if (aiReady) { ?><button class="pri" type="button" id="ai-write" style="background:#1A73E8">✨ לכתוב לי עם Gemini</button><div id="ai-out" style="display:flex;flex-direction:column;gap:10px"></div>' +
+'<button class="sec" type="button" id="ai-go">או: להעתיק ולפתוח את Gemini</button><? } else { ?>' +
+'<button class="pri" type="button" id="ai-go" style="background:#1A73E8">להעתיק ולפתוח את Gemini</button><? } ?>' +
 '<p id="ai-msg" class="muted" role="status" style="margin:0"></p>' +
 '<details><summary class="muted" style="cursor:pointer">מה נשלח ל־Gemini?</summary><textarea id="ai-prompt" readonly style="margin-top:8px;min-height:160px;font-size:14px"></textarea></details>' +
 '</section></main>' +
