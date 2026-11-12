@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 9; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API
+var SCRIPT_VERSION = 10; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -299,6 +299,27 @@ function aiPromptText_(idea, until) {
     'חשוב: לכתוב בבירור את כל תנאי המבצע ואת תאריך התוקף, בלי הבטחות מוגזמות ובלי "הכי זול" (חוק הגנת הצרכן). עברית טבעית, אימוג׳י אחד או שניים לכל היותר.'].join('\n');
 }
 
+// מוצא את מודלי ה־Flash הזמינים כרגע במפתח (שמות המודלים משתנים מדי פעם)
+function aiModels_(apiKey) {
+  var cached = CacheService.getScriptCache().get('gemini-model');
+  var list = cached ? [cached] : [];
+  try {
+    var res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', {
+      headers: { 'x-goog-api-key': apiKey }, muteHttpExceptions: true });
+    if (res.getResponseCode() === 200) {
+      var all = (JSON.parse(res.getContentText()).models || []).filter(function (m) {
+        return (m.supportedGenerationMethods || []).indexOf('generateContent') >= 0 &&
+          /flash/i.test(m.name) && !/(image|tts|audio|live|thinking|exp|preview|lite)/i.test(m.name);
+      }).map(function (m) { return m.name; });
+      all.sort(function (a, b) { return b.localeCompare(a, 'en', { numeric: true }); }); // הגרסה החדשה ראשונה
+      var latest = all.filter(function (n) { return /latest/.test(n); });
+      list = list.concat(latest, all);
+    }
+  } catch (e) {}
+  list = list.concat(['models/gemini-flash-latest', 'models/gemini-2.5-flash']);
+  return list.filter(function (n, i) { return list.indexOf(n) === i; });
+}
+
 function aiWrite(k, d) {
   if (!isAdminKey_(k)) throw new Error('אין הרשאה');
   var apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
@@ -315,15 +336,16 @@ function aiWrite(k, d) {
         properties: { title: { type: 'STRING' }, text: { type: 'STRING' } }, required: ['title', 'text'] } }
     }
   };
-  var models = ['gemini-flash-latest', 'gemini-2.5-flash'];
+  var models = aiModels_(apiKey);
   var lastErr = '';
-  for (var i = 0; i < models.length; i++) {
-    var res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + models[i] + ':generateContent', {
+  for (var i = 0; i < models.length && i < 4; i++) {
+    var res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/' + models[i] + ':generateContent', {
       method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': apiKey },
       payload: JSON.stringify(payload), muteHttpExceptions: true
     });
     var code = res.getResponseCode();
     if (code === 200) {
+      CacheService.getScriptCache().put('gemini-model', models[i], 21600);
       var j = JSON.parse(res.getContentText());
       var txt = j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts[0].text;
       var arr = JSON.parse(txt || '[]');
@@ -332,7 +354,8 @@ function aiWrite(k, d) {
       });
     }
     lastErr = code;
-    if (code === 400 || code === 401 || code === 403) break; // מפתח לא תקין – אין טעם לנסות מודל אחר
+    console.warn(models[i] + ' -> ' + code + ' ' + res.getContentText().slice(0, 300));
+    if (code === 401 || code === 403) break; // מפתח לא תקין – אין טעם לנסות מודל אחר
   }
   throw new Error(lastErr === 429 ? 'Gemini עמוס כרגע – נסי שוב בעוד דקה' : 'Gemini לא ענה (' + lastErr + ')');
 }
