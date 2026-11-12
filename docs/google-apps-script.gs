@@ -319,20 +319,27 @@ function aiModels_(apiKey) {
   return list.filter(function (n, i) { return list.indexOf(n) === i; });
 }
 
-// בדיקה מהעורך: מציג אילו מודלים זמינים ומנסה כתיבה אחת (מריצים ידנית: testGemini)
+// בדיקה מהעורך: בודק אילו מודלים עונים מהר עם המפתח (מריצים ידנית: testGemini)
 function testGemini() {
   var apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
-  Logger.log('key set: ' + !!apiKey);
-  var t0 = Date.now();
   var res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', {
     headers: { 'x-goog-api-key': apiKey }, muteHttpExceptions: true });
-  Logger.log('list ' + res.getResponseCode() + ' in ' + (Date.now() - t0) + 'ms');
-  var names = (JSON.parse(res.getContentText()).models || []).map(function (m) { return m.name; });
-  Logger.log(names.join('\n'));
-  Logger.log('order: ' + aiModels_(apiKey).join(', '));
-  var t1 = Date.now();
-  var out = aiWrite(PropertiesService.getScriptProperties().getProperty('ADMIN_KEY'), { idea: '10% הנחה על קעקוע קטן, עד סוף החודש' });
-  Logger.log('write in ' + (Date.now() - t1) + 'ms: ' + JSON.stringify(out));
+  var names = (JSON.parse(res.getContentText()).models || []).filter(function (m) {
+    return (m.supportedGenerationMethods || []).indexOf('generateContent') >= 0 &&
+      /^models\/gemini-(\d+(\.\d+)?-)?(flash|flash-lite|pro)(-latest)?$/.test(m.name);
+  }).map(function (m) { return m.name; });
+  names.sort(function (a, b) { return (/lite/.test(b) ? 1 : 0) - (/lite/.test(a) ? 1 : 0); });
+  Logger.log('candidates: ' + names.join(', '));
+  var started = Date.now();
+  names.forEach(function (n) {
+    if (Date.now() - started > 240000) return;
+    var t = Date.now();
+    var r = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/' + n + ':generateContent', {
+      method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': apiKey }, muteHttpExceptions: true,
+      payload: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'כתוב כותרת קצרה למבצע קעקועים' }] }] })
+    });
+    Logger.log(n + ' -> ' + r.getResponseCode() + ' in ' + (Date.now() - t) + 'ms ' + r.getContentText().slice(0, 120).replace(/\s+/g, ' '));
+  });
 }
 
 function aiWrite(k, d) {
