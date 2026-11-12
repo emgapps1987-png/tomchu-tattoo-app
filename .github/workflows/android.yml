@@ -98,3 +98,18 @@ jobs:
             --title "Tomchu Tattoo v$APP_VERSION" \
             --notes "להורדה בטלפון: לוחצים על $APK_NAME, מאשרים התקנה ממקור לא ידוע, ומתקינים מעל הגרסה הקיימת. קובץ ה־AAB מיועד ל־Google Play." \
             --latest
+
+      # מעלה את ה־AAB החתום לענף play-upload, כדי ש־Play Console יוכל למשוך אותו ישירות (בלי לצרף קבצים)
+      - name: Publish signed AAB for Play upload
+        if: ${{ endsWith(env.AAB_NAME, format('v{0}.aab', env.APP_VERSION)) }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/play" && cd "$RUNNER_TEMP/play"
+          cp "$GITHUB_WORKSPACE/$AAB_NAME" .
+          cp "$GITHUB_WORKSPACE/assets/icons/icon-512.png" store-icon-512.png
+          printf '{"version":"%s","aab":"%s","commit":"%s"}\n' "$APP_VERSION" "$AAB_NAME" "$GITHUB_SHA" > latest.json
+          git init -q -b play-upload
+          git add .
+          git -c user.name=github-actions -c user.email=github-actions@users.noreply.github.com commit -q -m "Play upload v$APP_VERSION"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" play-upload
