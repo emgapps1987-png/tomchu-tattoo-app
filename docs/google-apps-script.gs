@@ -320,6 +320,19 @@ function aiModels_(apiKey) {
   return list.filter(function (n, i) { return list.indexOf(n) === i; });
 }
 
+// בדיקה מהעורך: מציג אילו מודלים זמינים ומנסה כתיבה אחת (מריצים ידנית: testGemini)
+function testGemini() {
+  var apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  Logger.log('key set: ' + !!apiKey);
+  var t0 = Date.now();
+  var res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', {
+    headers: { 'x-goog-api-key': apiKey }, muteHttpExceptions: true });
+  Logger.log('list ' + res.getResponseCode() + ' in ' + (Date.now() - t0) + 'ms');
+  var names = (JSON.parse(res.getContentText()).models || []).map(function (m) { return m.name; });
+  Logger.log(names.join('\n'));
+  Logger.log('order: ' + aiModels_(apiKey).join(', '));
+}
+
 function aiWrite(k, d) {
   if (!isAdminKey_(k)) throw new Error('אין הרשאה');
   var apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
