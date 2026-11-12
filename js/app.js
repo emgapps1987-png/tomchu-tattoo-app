@@ -833,14 +833,14 @@ const BODY = new Set('wrist forearm arm shoulder collarbone ribs ankle calf thig
 const STOP = new Set('a an the of on in at with and or but for to my me i we our your something like want would some very too not that this is are be it its kind'.split(' '));
 const ideaState = { text: '', style: '', en: '' };
 
-const WEAK = new Set('strong beautiful cute nice pretty cool special meaningful'.split(' '));
+const WEAK = new Set('strong powerful beautiful cute nice pretty cool special meaningful'.split(' '));
 function cleanQuery(en) {
   const raw = String(en).toLowerCase().replace(/[^a-z\s-]/g, ' ').split(/\s+/).filter(Boolean);
   const words = [];
   for (let i = 0; i < raw.length; i++) {
     const w = raw[i];
     if (w === 'not' || w === "don't" || w === 'without') { i += (raw[i + 1] === 'too' || raw[i + 1] === 'very' || raw[i + 1] === 'so') ? 2 : 1; continue; }
-    if (STOP.has(w) || WEAK.has(w) || w === 'tattoo' || w === 'tattoos') continue;
+    if (w.length < 2 || STOP.has(w) || WEAK.has(w) || w === 'tattoo' || w === 'tattoos') continue;
     if (!words.includes(w)) words.push(w);
   }
   return words;
@@ -875,6 +875,14 @@ async function translateIdea(he) {
       clearTimeout(tm);
       en = (j && j.ok && j.text) || '';
     } catch (e) { en = ''; }
+    if (!en) {
+      // גיבוי: שירות תרגום חינמי (MyMemory)
+      try {
+        const j = await fetch(`https://api.mymemory.translated.net/get?langpair=he|en&q=${encodeURIComponent(rest)}`).then((r) => r.json());
+        const tx = j && j.responseStatus === 200 && j.responseData && j.responseData.translatedText;
+        if (tx && !/[\u0590-\u05FF]/.test(tx) && !/MYMEMORY WARNING/i.test(tx)) en = tx;
+      } catch (e) { /* בלי תרגום – נחפש בעברית */ }
+    }
   } else if (!/[֐-׿]/.test(rest)) en = rest;
   if (!en && rest) return null; // אין תרגום – נחפש בעברית
   const words = cleanQuery(en);
