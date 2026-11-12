@@ -61,6 +61,28 @@ jobs:
           cp app/build/outputs/bundle/release/app-release.aab "$GITHUB_WORKSPACE/$AAB_NAME"
           grep -E "targetSdkVersion|compileSdkVersion" variables.gradle
 
+      # חתימה על ה-AAB עם מפתח ההעלאה ל-Google Play (מתוך הסודות של GitHub).
+      # אם הסודות עוד לא הוגדרו – מדלגים, ונשאר רק הקובץ הלא חתום.
+      - name: Sign AAB for Google Play
+        env:
+          UPLOAD_KEYSTORE_B64: ${{ secrets.UPLOAD_KEYSTORE_B64 }}
+          UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$UPLOAD_KEYSTORE_B64" ] || [ -z "$UPLOAD_KEYSTORE_PASSWORD" ]; then
+            echo "No upload key secrets yet – skipping signed AAB"
+            exit 0
+          fi
+          echo "$UPLOAD_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          SIGNED="TomchuTattoo-v$APP_VERSION.aab"
+          cp "$AAB_NAME" "$SIGNED"
+          jarsigner -sigalg SHA256withRSA -digestalg SHA-256 \
+            -keystore "$RUNNER_TEMP/upload.jks" \
+            -storepass:env UPLOAD_KEYSTORE_PASSWORD -keypass:env UPLOAD_KEYSTORE_PASSWORD \
+            "$SIGNED" tomchu-upload
+          jarsigner -verify "$SIGNED" | tail -1
+          rm -f "$RUNNER_TEMP/upload.jks" "$AAB_NAME"
+          echo "AAB_NAME=$SIGNED" >> "$GITHUB_ENV"
+
       - uses: actions/upload-artifact@v4
         with:
           name: TomchuTattoo-v${{ env.APP_VERSION }}
@@ -74,5 +96,5 @@ jobs:
         run: |
           gh release create "v$APP_VERSION" "$APK_NAME" "$AAB_NAME" \
             --title "Tomchu Tattoo v$APP_VERSION" \
-            --notes "להורדה בטלפון: לוחצים על $APK_NAME, מאשרים התקנה ממקור לא ידוע, ומתקינים מעל הגרסה הקיימת. קובץ ה־AAB מיועד ל־Google Play (צריך לחתום עליו לפני העלאה)." \
+            --notes "להורדה בטלפון: לוחצים על $APK_NAME, מאשרים התקנה ממקור לא ידוע, ומתקינים מעל הגרסה הקיימת. קובץ ה־AAB מיועד ל־Google Play." \
             --latest
