@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 11; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר
+var SCRIPT_VERSION = 12; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -358,12 +358,13 @@ function aiWrite(k, d) {
         properties: { title: { type: 'STRING' }, text: { type: 'STRING' } }, required: ['title', 'text'] } }
     }
   };
-  var models = aiModels_(apiKey);
+  // flash-lite עונה מהר גם כשגוגל עמוסים; אחריו גיבויים
+  var models = ['models/gemini-flash-lite-latest', 'models/gemini-flash-latest', 'models/gemini-2.5-flash'];
   var lastErr = '';
   for (var i = 0; i < models.length && i < 3; i++) {
-    var v = parseFloat(models[i].replace(/^models\/gemini-/, ''));
-    // חשיבה קצרה = תשובה מהירה (טקסט פרסומי לא צריך חשיבה ארוכה)
-    payload.generationConfig.thinkingConfig = v >= 3 ? { thinkingLevel: 'low' } : { thinkingBudget: 0 };
+    // בלי חשיבה ארוכה – טקסט פרסומי קצר צריך תשובה מהירה
+    if (/2\.5-flash$/.test(models[i])) payload.generationConfig.thinkingConfig = { thinkingBudget: 0 };
+    else delete payload.generationConfig.thinkingConfig;
     var call = function () {
       return UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/' + models[i] + ':generateContent', {
         method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': apiKey },
