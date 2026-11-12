@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 12; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite
+var SCRIPT_VERSION = 13; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -359,12 +359,14 @@ function aiWrite(k, d) {
     }
   };
   // flash-lite עונה מהר גם כשגוגל עמוסים; אחריו גיבויים
-  var models = ['models/gemini-flash-lite-latest', 'models/gemini-flash-latest', 'models/gemini-2.5-flash'];
+  // כשגוגל עמוסים (503) מנסים שוב כמה פעמים לסירוגין – בדרך כלל עובר בניסיון השני/השלישי
+  var models = ['models/gemini-flash-lite-latest', 'models/gemini-flash-latest', 'models/gemini-flash-lite-latest', 'models/gemini-flash-latest', 'models/gemini-flash-lite-latest', 'models/gemini-flash-lite-latest'];
+  var t0 = Date.now();
   var lastErr = '';
-  for (var i = 0; i < models.length && i < 3; i++) {
+  for (var i = 0; i < models.length && Date.now() - t0 < 45000; i++) {
+    if (i > 0) Utilities.sleep(1200 * i);
     // בלי חשיבה ארוכה – טקסט פרסומי קצר צריך תשובה מהירה
-    if (/2\.5-flash$/.test(models[i])) payload.generationConfig.thinkingConfig = { thinkingBudget: 0 };
-    else delete payload.generationConfig.thinkingConfig;
+    delete payload.generationConfig.thinkingConfig;
     var call = function () {
       return UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/' + models[i] + ':generateContent', {
         method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': apiKey },
@@ -384,7 +386,7 @@ function aiWrite(k, d) {
     }
     lastErr = code;
     console.warn(models[i] + ' -> ' + code + ' ' + res.getContentText().slice(0, 300));
-    if (code === 401 || code === 403) break; // מפתח לא תקין – אין טעם לנסות מודל אחר
+    if (code !== 503 && code !== 429 && code !== 500) break; // מפתח לא תקין – אין טעם לנסות מודל אחר
   }
   throw new Error(lastErr === 429 || lastErr === 503 ? 'Gemini עמוס כרגע אצל גוגל – נסי שוב בעוד כמה דקות, או השתמשי בכפתור "להעתיק ולפתוח את Gemini"' : 'Gemini לא ענה (' + lastErr + ')');
 }
