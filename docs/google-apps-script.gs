@@ -163,6 +163,20 @@ function sketchPreview_(file) {
   return '';
 }
 
+// בדיקה מהעורך: מוודא שהחיבור ל־Cloudflare עובד (מריצים ידנית: testSketch)
+function testSketch() {
+  var token = PropertiesService.getScriptProperties().getProperty('CF_API_TOKEN');
+  Logger.log('token set: ' + !!token + ' len ' + (token || '').length);
+  var v = UrlFetchApp.fetch('https://api.cloudflare.com/client/v4/user/tokens/verify', { headers: { Authorization: 'Bearer ' + token }, muteHttpExceptions: true });
+  Logger.log('verify ' + v.getResponseCode() + ' ' + v.getContentText().slice(0, 200));
+  var a = UrlFetchApp.fetch('https://api.cloudflare.com/client/v4/accounts?per_page=5', { headers: { Authorization: 'Bearer ' + token }, muteHttpExceptions: true });
+  Logger.log('accounts ' + a.getResponseCode() + ' ' + a.getContentText().replace(/"id":"[0-9a-f]+"/g, '"id":"…"').slice(0, 300));
+  var plan = sketchPlan_('קוליברי שותה מפרח לוטוס', 'fine', 'arm');
+  Logger.log('plan ' + JSON.stringify(plan).slice(0, 400));
+  var t0 = Date.now(); var b = cfDraw_(plan.prompt);
+  Logger.log('draw ok ' + b.getBytes().length + ' bytes in ' + (Date.now() - t0) + 'ms');
+}
+
 function sketchCreate_(d) {
   var idea = String(d.idea || '').trim().slice(0, 300);
   if (idea.length < 3) return json_({ ok: false, error: 'כתבו קודם מה הרעיון' });
@@ -172,7 +186,8 @@ function sketchCreate_(d) {
   if (!plan.allowed) return json_({ ok: false, error: 'אי אפשר ליצור את הסקיצה הזו' + (plan.reason ? ': ' + plan.reason : '.') + ' נסו רעיון אחר.', left: q.left });
   var blob;
   try { blob = cfDraw_(plan.prompt); }
-  catch (e) { return json_({ ok: false, error: String(e.message) === 'busy' ? 'הציור עמוס כרגע – נסו שוב בעוד דקה' : 'לא הצלחנו לצייר כרגע – נסו שוב', left: q.left }); }
+  catch (e) {
+    console.warn('sketch draw: ' + e); return json_({ ok: false, error: String(e.message) === 'busy' ? 'הציור עמוס כרגע – נסו שוב בעוד דקה' : 'לא הצלחנו לצייר כרגע – נסו שוב', left: q.left }); }
   sketchCount_(q);
   var id = Utilities.getUuid().replace(/-/g, '');
   var when = Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'yyyy-MM-dd HHmm');
