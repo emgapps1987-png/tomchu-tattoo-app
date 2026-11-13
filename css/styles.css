@@ -343,3 +343,11 @@ dialog.promo-dlg::backdrop { background: rgba(6,5,8,.72); }
 .alt-link { min-height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); display: flex; align-items: center; justify-content: space-between; text-decoration: none; }
 .alt-link svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
 .btn-pin { background: #E60023; color: #fff; }
+
+/* רעיון מקורי – סקיצה ב־AI */
+.tint-rose { background: #3A1430; border-color: #D97AD6; color: #FFD9F6; }
+.tint-rose .chip { background: #A0179C; }
+.sk-frame { position: relative; width: 100%; aspect-ratio: 1; border-radius: 18px; overflow: hidden; border: 1px solid var(--line, #2C2530); background: #FBFAF7; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.sk-frame canvas { width: 100%; height: 100%; display: block; pointer-events: none; }
+.sk-badge { position: absolute; top: 10px; inset-inline-end: 10px; background: rgba(11,10,13,.8); color: #fff; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+.sk-err { color: #FF9AA8; margin: 0; font-size: .9rem; }

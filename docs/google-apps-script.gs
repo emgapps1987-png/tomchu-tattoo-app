@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 13; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים
+var SCRIPT_VERSION = 14; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -39,12 +39,191 @@ function rateOk_() {
   return n <= MAX_PER_HOUR;
 }
 
+// ---------------------------------------------------------------------
+// רעיון מקורי – סקיצת קעקוע ב־AI (בחינם: Gemini לניסוח + Cloudflare Workers AI לציור)
+// מפתחות בהגדרות הסקריפט: GEMINI_API_KEY, CF_API_TOKEN (ואופציונלי CF_ACCOUNT_ID)
+// ---------------------------------------------------------------------
+var SKETCH_FOLDER = 'Tomchu – סקיצות';
+var SKETCH_PER_DEVICE = 3;   // סקיצות ביום לכל טלפון
+var SKETCH_PER_DAY = 80;     // תקרה יומית כוללת (המכסה החינמית של Cloudflare גבוהה יותר)
+var SKETCH_STYLES = {
+  fine: 'delicate fine line tattoo, thin single-needle black ink lines, minimal shading',
+  real: 'black and grey realism tattoo sketch, soft pencil shading, detailed',
+  mini: 'minimalist tattoo, very simple clean black lines, lots of negative space',
+  bng: 'black and grey tattoo design, bold outlines with smooth grey shading'
+};
+var SKETCH_PLACES = { arm: 'vertical composition for forearm', hand: 'small compact composition for hand or wrist', back: 'larger composition for upper back', leg: 'vertical composition for leg', ribs: 'flowing vertical composition for ribs' };
+
+function sketchFolder_() {
+  var it = DriveApp.getFoldersByName(SKETCH_FOLDER);
+  return it.hasNext() ? it.next() : DriveApp.createFolder(SKETCH_FOLDER);
+}
+
+function dayKey_() { return Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'yyyyMMdd'); }
+
+function sketchQuota_(device) {
+  var props = PropertiesService.getScriptProperties();
+  var cache = CacheService.getScriptCache();
+  var dk = dayKey_();
+  var dev = 'sk-' + String(device || 'anon').replace(/[^a-z0-9]/gi, '').slice(0, 40) + '-' + dk;
+  var used = Number(cache.get(dev) || 0);
+  var total = Number(props.getProperty('SKETCH_TOTAL_' + dk) || 0);
+  return { devKey: dev, used: used, total: total, dk: dk,
+    ok: used < SKETCH_PER_DEVICE && total < SKETCH_PER_DAY,
+    left: Math.max(0, SKETCH_PER_DEVICE - used) };
+}
+
+function sketchCount_(q) {
+  CacheService.getScriptCache().put(q.devKey, String(q.used + 1), 21600 * 4);
+  PropertiesService.getScriptProperties().setProperty('SKETCH_TOTAL_' + q.dk, String(q.total + 1));
+}
+
+// Gemini: בודק שהבקשה מתאימה ומנסח פרומט באנגלית לסקיצה מקורית
+function sketchPlan_(idea, style, place) {
+  var apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  var instr = [
+    'You help a tattoo studio turn a customer idea (usually Hebrew) into an image prompt for an ORIGINAL tattoo sketch.',
+    'Customer idea: """' + idea + '"""',
+    'Return JSON {"allowed": boolean, "reason": string, "subject": string}.',
+    'allowed=false if the idea is sexual or nude, hateful or extremist symbols, gore, depicts a minor in any unsafe way, asks for a real identifiable person or celebrity, or asks for a copyrighted character, logo or brand. Otherwise allowed=true.',
+    'subject = a short vivid English description (max 40 words) of what to draw, original composition, no text or letters in the image (if the customer wants a name or quote, describe a decorative space for it instead of writing letters).',
+    'reason = short Hebrew explanation only when allowed=false.'
+  ].join('\n');
+  var subject = '', allowed = true, reason = '';
+  if (apiKey) {
+    var payload = { contents: [{ role: 'user', parts: [{ text: instr }] }],
+      generationConfig: { temperature: 0.4, responseMimeType: 'application/json',
+        responseSchema: { type: 'OBJECT', properties: { allowed: { type: 'BOOLEAN' }, reason: { type: 'STRING' }, subject: { type: 'STRING' } }, required: ['allowed', 'subject'] } } };
+    var t0 = Date.now();
+    for (var i = 0; i < 4 && Date.now() - t0 < 20000; i++) {
+      if (i > 0) Utilities.sleep(1000 * i);
+      var res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent', {
+        method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': apiKey },
+        payload: JSON.stringify(payload), muteHttpExceptions: true });
+      if (res.getResponseCode() === 200) {
+        try {
+          var j = JSON.parse(res.getContentText());
+          var o = JSON.parse(j.candidates[0].content.parts[0].text);
+          allowed = o.allowed !== false; reason = String(o.reason || ''); subject = String(o.subject || '');
+        } catch (e) {}
+        break;
+      }
+      if ([429, 500, 503].indexOf(res.getResponseCode()) < 0) break;
+    }
+  }
+  if (!subject) { // גיבוי בלי Gemini: תרגום פשוט
+    try { subject = LanguageApp.translate(idea, 'iw', 'en'); } catch (e) { subject = idea; }
+  }
+  var prompt = 'Original tattoo design sketch: ' + subject + '. ' + (SKETCH_STYLES[style] || SKETCH_STYLES.fine) +
+    (SKETCH_PLACES[place] ? ', ' + SKETCH_PLACES[place] : '') +
+    '. Clean tattoo stencil artwork on plain white paper background, centered, high contrast black ink, flash sheet style, no text, no letters, no signature, no watermark, not a photo, no skin, no people.';
+  return { allowed: allowed, reason: reason, prompt: prompt.slice(0, 2000) };
+}
+
+function cfAccount_(token) {
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty('CF_ACCOUNT_ID');
+  if (id) return id;
+  var r = UrlFetchApp.fetch('https://api.cloudflare.com/client/v4/accounts?per_page=5', {
+    headers: { Authorization: 'Bearer ' + token }, muteHttpExceptions: true });
+  var j = JSON.parse(r.getContentText() || '{}');
+  id = j.result && j.result[0] && j.result[0].id;
+  if (!id) throw new Error('Cloudflare: לא נמצא חשבון (' + r.getResponseCode() + ')');
+  props.setProperty('CF_ACCOUNT_ID', id);
+  return id;
+}
+
+function cfDraw_(prompt) {
+  var token = PropertiesService.getScriptProperties().getProperty('CF_API_TOKEN');
+  if (!token) throw new Error('הציור עוד לא מחובר');
+  var acc = cfAccount_(token);
+  var res = UrlFetchApp.fetch('https://api.cloudflare.com/client/v4/accounts/' + acc + '/ai/run/@cf/black-forest-labs/flux-1-schnell', {
+    method: 'post', contentType: 'application/json', headers: { Authorization: 'Bearer ' + token },
+    payload: JSON.stringify({ prompt: prompt, steps: 6 }), muteHttpExceptions: true });
+  var code = res.getResponseCode();
+  if (code !== 200) {
+    console.warn('cf ' + code + ' ' + res.getContentText().slice(0, 300));
+    throw new Error(code === 429 ? 'busy' : 'draw failed');
+  }
+  var j = JSON.parse(res.getContentText());
+  var b64 = j.result && j.result.image;
+  if (!b64) throw new Error('draw failed');
+  return Utilities.newBlob(Utilities.base64Decode(b64), 'image/jpeg');
+}
+
+// תצוגה מקדימה קטנה בלבד – הקובץ המלא נשאר בדרייב של תום
+function sketchPreview_(file) {
+  for (var i = 0; i < 6; i++) {
+    try {
+      var th = file.getThumbnail();
+      if (th && th.getBytes().length > 500) return 'data:' + (th.getContentType() || 'image/png') + ';base64,' + Utilities.base64Encode(th.getBytes());
+    } catch (e) {}
+    Utilities.sleep(1500);
+  }
+  return '';
+}
+
+function sketchCreate_(d) {
+  var idea = String(d.idea || '').trim().slice(0, 300);
+  if (idea.length < 3) return json_({ ok: false, error: 'כתבו קודם מה הרעיון' });
+  var q = sketchQuota_(d.device);
+  if (!q.ok) return json_({ ok: false, error: q.used >= SKETCH_PER_DEVICE ? 'הגעתם ל־' + SKETCH_PER_DEVICE + ' סקיצות היום. אפשר לחזור מחר, או לשלוח לתום את הרעיון בפנייה.' : 'היום כבר נוצרו הרבה סקיצות – נסו שוב מחר', left: 0 });
+  var plan = sketchPlan_(idea, String(d.style || ''), String(d.place || ''));
+  if (!plan.allowed) return json_({ ok: false, error: 'אי אפשר ליצור את הסקיצה הזו' + (plan.reason ? ': ' + plan.reason : '.') + ' נסו רעיון אחר.', left: q.left });
+  var blob;
+  try { blob = cfDraw_(plan.prompt); }
+  catch (e) { return json_({ ok: false, error: String(e.message) === 'busy' ? 'הציור עמוס כרגע – נסו שוב בעוד דקה' : 'לא הצלחנו לצייר כרגע – נסו שוב', left: q.left }); }
+  sketchCount_(q);
+  var id = Utilities.getUuid().replace(/-/g, '');
+  var when = Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'yyyy-MM-dd HHmm');
+  var file = sketchFolder_().createFile(blob.setName('סקיצה ' + when + ' ' + id.slice(0, 6) + '.jpg'));
+  file.setDescription('רעיון: ' + idea + '\nסגנון: ' + (d.style || '') + ' · מיקום: ' + (d.place || '') + '\nפרומט: ' + plan.prompt);
+  CacheService.getScriptCache().put('skf-' + id, JSON.stringify({ f: file.getId(), idea: idea, style: d.style || '', place: d.place || '' }), 21600);
+  return json_({ ok: true, id: id, preview: sketchPreview_(file), left: Math.max(0, q.left - 1) });
+}
+
+function sketchMeta_(id) {
+  var raw = CacheService.getScriptCache().get('skf-' + String(id || '').replace(/[^a-f0-9]/gi, ''));
+  return raw ? JSON.parse(raw) : null;
+}
+
+function sketchSend_(d) {
+  var m = sketchMeta_(d.id);
+  if (!m) return json_({ ok: false, error: 'הסקיצה פגה – צרו אותה שוב' });
+  var name = String(d.name || '').trim().slice(0, 60), phone = String(d.phone || '').replace(/[^\d+\-\s]/g, '').slice(0, 20);
+  if (!name || phone.replace(/\D/g, '').length < 9) return json_({ ok: false, error: 'צריך שם וטלפון' });
+  var file = DriveApp.getFileById(m.f);
+  var wa = 'https://wa.me/972' + phone.replace(/\D/g, '').replace(/^0/, '');
+  var esc = function (x) { return String(x).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var html = '<div dir="rtl" style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6">' +
+    '<h2 style="margin:0 0 8px">✨ סקיצה חדשה מהאפליקציה – ' + esc(name) + '</h2>' +
+    '<p style="margin:0"><b>הרעיון:</b> ' + esc(m.idea) + '<br><b>סגנון:</b> ' + esc(m.style) + ' · <b>מיקום:</b> ' + esc(m.place) + '<br><b>טלפון:</b> ' + esc(phone) + '</p>' +
+    '<p><a href="' + wa + '">וואטסאפ ל' + esc(name) + '</a> · <a href="' + file.getUrl() + '">לפתוח בדרייב</a></p>' +
+    '<p style="color:#777;font-size:13px">הסקיצה המלאה מצורפת. הלקוח ראה רק טיוטה קטנה עם סימן מים. נוצר בעזרת AI.</p></div>';
+  MailApp.sendEmail({ to: EMAIL_TO, subject: '✨ סקיצה חדשה מהאפליקציה – ' + name, htmlBody: html, attachments: [file.getBlob()] });
+  file.setDescription(file.getDescription() + '\nנשלח ע״י: ' + name + ' · ' + phone);
+  return json_({ ok: true });
+}
+
+function sketchReport_(d) {
+  var m = sketchMeta_(d.id);
+  var why = String(d.reason || '').slice(0, 300);
+  var link = m ? DriveApp.getFileById(m.f).getUrl() : '(לא נמצא)';
+  MailApp.sendEmail({ to: EMAIL_TO, subject: '⚑ דיווח על סקיצה מהאפליקציה',
+    htmlBody: '<div dir="rtl" style="font-family:Arial">לקוח דיווח על סקיצה כלא ראויה.<br><b>רעיון:</b> ' + (m ? m.idea : '') + '<br><b>סיבה:</b> ' + why + '<br><a href="' + link + '">הסקיצה בדרייב</a></div>' });
+  if (m) DriveApp.getFileById(m.f).setName('⚑ ' + DriveApp.getFileById(m.f).getName());
+  return json_({ ok: true });
+}
+
 function doPost(e) {
   try {
     var body = (e && e.postData && e.postData.contents) || '';
     if (body.length > MAX_BODY) return json_({ ok: false, error: 'too large' });
-    if (!rateOk_()) return json_({ ok: false, error: 'busy' });
     var d = JSON.parse(body);
+    if (d.kind === 'sketch') return sketchCreate_(d);
+    if (d.kind === 'sketchSend') return sketchSend_(d);
+    if (d.kind === 'sketchReport') return sketchReport_(d);
+    if (!rateOk_()) return json_({ ok: false, error: 'busy' });
     if (d.kind !== 'health') return json_({ ok: false, error: 'unknown kind' });
     if (!d.name || !d.signature || !Array.isArray(d.answers)) return json_({ ok: false, error: 'missing fields' });
     if (!SIG_RE.test(String(d.signature))) return json_({ ok: false, error: 'bad signature' });

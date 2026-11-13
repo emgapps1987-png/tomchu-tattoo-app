@@ -99,6 +99,7 @@ views.home = () => `
       <a class="btn btn-tint tint-teal" href="#/health"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M12 10v6M9 13h6"/></svg></span>הצהרת בריאות</a>
       <a class="btn btn-tint tint-green" href="https://wa.me/${CONFIG.whatsapp}" target="_blank" rel="noopener"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"/></svg></span>וואטסאפ לתום</a>
     </div>
+    <a class="btn btn-tint tint-rose" href="#/sketch"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.6L12 15l-1.8-4.4L5.5 9l4.7-1.4z"/><path d="M18 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></span>רעיון מקורי – סקיצה ב־AI</a>
     <a class="btn btn-tint tint-violet" href="#/ideas"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>מחפשים השראה? רעיונות מפינטרסט</a>
   </div>
 
@@ -403,7 +404,7 @@ views.accessibility = () => `
 // ---------------------------------------------------------------------
 // ניתוב
 // ---------------------------------------------------------------------
-const titles = { home: 'בית', about: 'תום', gallery: 'עבודות', care: 'מדריך ההחלמה', articles: 'מאמרים', article: 'מאמר', contact: 'פנייה לתום', health: 'הצהרת בריאות', done: 'תודה', accessibility: 'הצהרת נגישות', promo: 'מבצע החודש', ideas: 'רעיונות מפינטרסט' };
+const titles = { home: 'בית', about: 'תום', gallery: 'עבודות', care: 'מדריך ההחלמה', articles: 'מאמרים', article: 'מאמר', contact: 'פנייה לתום', health: 'הצהרת בריאות', done: 'תודה', accessibility: 'הצהרת נגישות', promo: 'מבצע החודש', ideas: 'רעיונות מפינטרסט', sketch: 'רעיון מקורי' };
 const tabOf = (name, param) => ({ about: 'about', accessibility: 'about', gallery: 'gallery', contact: 'contact', health: 'health', done: param === 'health' ? 'health' : 'contact' }[name] || 'home');
 
 function render() {
@@ -960,6 +961,135 @@ binders.ideas = () => {
     ideaState.parts = parts;
     renderIdeaOut(buildQueries(parts, ideaState.style));
     $('#idea-out').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+};
+
+// ---------------------------------------------------------------------
+// רעיון מקורי – סקיצה ב־AI. הלקוח רואה רק טיוטה קטנה עם סימן מים; הקובץ המלא נשמר אצל תום
+// ---------------------------------------------------------------------
+const SKETCH_STARTS = ['קוליברי עם פרחים', 'קעקוע משפחתי', 'זכר לאהוב', 'חיה אהובה', 'שמש וירח', 'גל ים'];
+const SKETCH_STYLES = [{ id: 'fine', he: 'Fine Line' }, { id: 'real', he: 'ריאליזם' }, { id: 'mini', he: 'מינימליסטי' }, { id: 'bng', he: 'שחור־אפור' }];
+const SKETCH_PLACES = [{ id: 'arm', he: 'אמה' }, { id: 'hand', he: 'יד / שורש כף' }, { id: 'back', he: 'גב' }, { id: 'leg', he: 'רגל' }, { id: 'ribs', he: 'צלעות' }];
+const sketchState = { text: '', style: 'fine', place: '', id: '', preview: '', left: null, busy: false };
+const deviceId = () => { let d = store.get('tt-dev'); if (!d) { d = Math.random().toString(36).slice(2) + Date.now().toString(36); store.set('tt-dev', d); } return d; };
+
+views.sketch = () => `
+<section class="screen" aria-labelledby="h">
+  <div class="stack" style="gap:6px">
+    <span class="kicker" style="color:var(--acc);font-weight:700;font-size:.9rem">חדש ✨</span>
+    <h1 id="h">יוצרים רעיון מקורי</h1>
+    <p class="muted">ספרו מה בראש, ונצייר לכם סקיצה ראשונה. תום תהפוך אותה לקעקוע שלכם.</p>
+  </div>
+  <form id="sk-form" class="stack" novalidate>
+    <div class="field">
+      <label for="sk-text">הרעיון שלי</label>
+      <textarea id="sk-text" class="fld" rows="3" maxlength="300" placeholder="למשל: קוליברי שותה מפרח לוטוס, עדין וזורם">${esc(sketchState.text)}</textarea>
+    </div>
+    <div class="stack" style="gap:8px">
+      <span class="muted" style="font-weight:700;font-size:.9rem">או התחילו מרעיון</span>
+      <div class="chips">${SKETCH_STARTS.map((x) => `<button type="button" class="chip-btn" data-skstart="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+    </div>
+    <div class="stack" style="gap:8px">
+      <span style="font-weight:700">סגנון</span>
+      <div class="chips">${SKETCH_STYLES.map((x) => `<button type="button" class="chip-btn" data-skstyle="${x.id}" aria-pressed="${sketchState.style === x.id}">${esc(x.he)}</button>`).join('')}</div>
+    </div>
+    <div class="stack" style="gap:8px">
+      <span style="font-weight:700">איפה על הגוף? (לא חובה)</span>
+      <div class="chips">${SKETCH_PLACES.map((x) => `<button type="button" class="chip-btn" data-skplace="${x.id}" aria-pressed="${sketchState.place === x.id}">${esc(x.he)}</button>`).join('')}</div>
+    </div>
+    <button type="submit" class="btn btn-primary" id="sk-go">✨ צרו לי סקיצה</button>
+    <p class="muted" style="text-align:center;font-size:.85rem;margin-top:-4px">עד 3 סקיצות ביום · נוצר בעזרת AI · אל תכתבו פרטים אישיים</p>
+  </form>
+  <div id="sk-out" aria-live="polite"></div>
+</section>`;
+
+function drawSketchPreview(canvas, src) {
+  const img = new Image();
+  img.onload = () => {
+    const W = 600; canvas.width = W; canvas.height = W;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#FBFAF7'; ctx.fillRect(0, 0, W, W);
+    ctx.imageSmoothingQuality = 'high'; ctx.drawImage(img, 0, 0, W, W);
+    ctx.save(); ctx.translate(W / 2, W / 2); ctx.rotate(-Math.PI / 6);
+    ctx.font = '700 26px Heebo, Arial, sans-serif'; ctx.fillStyle = 'rgba(160,23,156,.33)'; ctx.textAlign = 'center';
+    for (let y = -W; y <= W; y += 95) for (let x = -W; x <= W; x += 330) ctx.fillText('Tomchu Tattoo · טיוטה', x + ((y / 95) % 2 ? 165 : 0), y);
+    ctx.restore();
+  };
+  img.src = src;
+}
+
+function renderSketchOut(msg) {
+  const out = $('#sk-out'); if (!out) return;
+  if (msg) { out.innerHTML = `<div class="card"><p style="margin:0">${esc(msg)}</p></div>`; return; }
+  if (!sketchState.id) { out.innerHTML = ''; return; }
+  const left = sketchState.left;
+  out.innerHTML = `
+  <div class="stack" style="gap:12px">
+    <div class="sk-frame" oncontextmenu="return false">
+      ${sketchState.preview ? '<canvas id="sk-canvas" role="img" aria-label="טיוטת הסקיצה עם סימן מים"></canvas>' : '<p class="muted" style="padding:20px;text-align:center">הסקיצה נוצרה ונשמרה אצל תום. התצוגה המקדימה לא נטענה – אפשר לשלוח אותה לתום בכל זאת.</p>'}
+      <span class="sk-badge">טיוטה</span>
+    </div>
+    <p class="muted" style="font-size:.88rem;margin:0">זו טיוטה בלבד. הגרסה המלאה נשלחת רק לתום, והיא תעצב ממנה את הקעקוע שלך.</p>
+    <form id="sk-send" class="card stack" novalidate>
+      <span style="font-weight:700">לשלוח לתום</span>
+      <div class="field"><label for="sk-name">שם</label><input id="sk-name" class="fld" autocomplete="name" maxlength="60" value="${esc(store.get('tt-name') || '')}"></div>
+      <div class="field"><label for="sk-phone">טלפון</label><input id="sk-phone" class="fld" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" dir="ltr" value="${esc(store.get('tt-phone') || '')}"></div>
+      <button type="submit" class="btn btn-primary" id="sk-send-btn">לשלוח לתום 💜</button>
+    </form>
+    <button type="button" class="btn btn-tint tint-violet" id="sk-again" ${left === 0 ? 'disabled' : ''}>סקיצה אחרת${left != null ? ` (נשארו ${left} היום)` : ''}</button>
+    <button type="button" class="link-btn" id="sk-report" style="align-self:center;font-size:.85rem">⚑ דיווח על תוכן לא ראוי</button>
+  </div>`;
+  if (sketchState.preview) drawSketchPreview($('#sk-canvas'), sketchState.preview);
+  $('#sk-again').addEventListener('click', () => $('#sk-form').requestSubmit());
+  $('#sk-report').addEventListener('click', async () => {
+    const why = window.prompt('מה לא תקין בסקיצה? (לא חובה)') ?? null; if (why === null) return;
+    try { await postJson(CONFIG.healthEndpoint, { kind: 'sketchReport', id: sketchState.id, reason: why }); } catch (e) { /* בכל מקרה מסתירים */ }
+    sketchState.id = ''; sketchState.preview = '';
+    renderSketchOut('תודה על הדיווח. הסקיצה הוסתרה, ותום תבדוק אותה.');
+  });
+  $('#sk-send').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = $('#sk-name').value.trim(), phone = $('#sk-phone').value.trim();
+    if (!name || phone.replace(/\D/g, '').length < 9) { announce('צריך שם וטלפון'); (!name ? $('#sk-name') : $('#sk-phone')).focus(); return; }
+    store.set('tt-name', name); store.set('tt-phone', phone);
+    const btn = $('#sk-send-btn'); btn.disabled = true; btn.textContent = 'שולח…';
+    try {
+      const r = await (await postJson(CONFIG.healthEndpoint, { kind: 'sketchSend', id: sketchState.id, name, phone })).json();
+      if (!r.ok) throw new Error(r.error || '');
+      $('#sk-send').outerHTML = '<div class="card"><p style="margin:0"><b>נשלח לתום ✓</b> היא תחזור אלייך בוואטסאפ.</p></div>';
+      setTimeout(maybeAskPush, 1500);
+    } catch (err) { btn.disabled = false; btn.textContent = 'לשלוח לתום 💜'; announce(err.message || 'לא נשלח – נסו שוב'); const m = $('#sk-send .sk-err') || $('#sk-send').appendChild(Object.assign(document.createElement('p'), { className: 'sk-err' })); m.textContent = err.message || 'לא הצלחנו לשלוח כרגע. נסו שוב.'; }
+  });
+}
+
+binders.sketch = () => {
+  const ta = $('#sk-text');
+  ta.addEventListener('input', () => { sketchState.text = ta.value; });
+  $$('[data-skstart]').forEach((b) => b.addEventListener('click', () => { ta.value = b.dataset.skstart; sketchState.text = ta.value; ta.focus(); }));
+  $$('[data-skstyle]').forEach((b) => b.addEventListener('click', () => {
+    sketchState.style = b.dataset.skstyle; $$('[data-skstyle]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+  }));
+  $$('[data-skplace]').forEach((b) => b.addEventListener('click', () => {
+    sketchState.place = sketchState.place === b.dataset.skplace ? '' : b.dataset.skplace;
+    $$('[data-skplace]').forEach((x) => x.setAttribute('aria-pressed', x.dataset.skplace === sketchState.place));
+  }));
+  renderSketchOut();
+  $('#sk-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (sketchState.busy) return;
+    const idea = ta.value.trim(); sketchState.text = idea;
+    if (idea.length < 3) { ta.focus(); announce('כתבו רעיון קצר'); return; }
+    const btn = $('#sk-go'); sketchState.busy = true; btn.disabled = true; btn.textContent = 'מציירים… (עד חצי דקה)';
+    renderSketchOut('מציירים לך סקיצה… זה לוקח בערך 20–30 שניות ✨');
+    $('#sk-out').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    try {
+      const r = await (await postJson(CONFIG.healthEndpoint, { kind: 'sketch', idea, style: sketchState.style, place: sketchState.place, device: deviceId() })).json();
+      if (r.left != null) sketchState.left = r.left;
+      if (!r.ok) { renderSketchOut(r.error || 'לא הצלחנו לצייר כרגע – נסו שוב'); return; }
+      sketchState.id = r.id; sketchState.preview = r.preview || '';
+      renderSketchOut();
+    } catch (err) { renderSketchOut('אין חיבור כרגע – נסו שוב בעוד רגע'); }
+    finally { sketchState.busy = false; const b2 = $('#sk-go'); if (b2) { b2.disabled = false; b2.textContent = '✨ צרו לי סקיצה'; } }
   });
 };
 
