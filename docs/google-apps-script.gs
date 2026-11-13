@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 15; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
+var SCRIPT_VERSION = 16; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -153,14 +153,23 @@ function cfDraw_(prompt) {
 
 // תצוגה מקדימה קטנה בלבד – הקובץ המלא נשאר בדרייב של תום
 function sketchPreview_(file) {
-  for (var i = 0; i < 6; i++) {
+  // התמונה הממוזערת של דרייב בגודל 384px (לא הקובץ המלא). ממתינים עד שדרייב מכין אותה.
+  var url = 'https://www.googleapis.com/drive/v3/files/' + file.getId() + '?fields=thumbnailLink';
+  var auth = { headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }, muteHttpExceptions: true };
+  for (var i = 0; i < 8; i++) {
     try {
-      var th = file.getThumbnail();
-      if (th && th.getBytes().length > 500) return 'data:' + (th.getContentType() || 'image/png') + ';base64,' + Utilities.base64Encode(th.getBytes());
+      var link = JSON.parse(UrlFetchApp.fetch(url, auth).getContentText()).thumbnailLink;
+      if (link) {
+        var r = UrlFetchApp.fetch(link.replace(/=s\d+$/, '') + '=s384', auth);
+        var b = r.getBlob();
+        if (r.getResponseCode() === 200 && b.getBytes().length > 500 && b.getBytes().length < 120000) {
+          return 'data:' + (b.getContentType() || 'image/jpeg') + ';base64,' + Utilities.base64Encode(b.getBytes());
+        }
+      }
     } catch (e) {}
     Utilities.sleep(1500);
   }
-  return '';
+  return ''; // אף פעם לא מחזירים את התמונה באיכות מלאה
 }
 
 // בדיקה מהעורך: מוודא שהחיבור ל־Cloudflare עובד (מריצים ידנית: testSketch)
