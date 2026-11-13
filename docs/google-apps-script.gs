@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 16; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
+var SCRIPT_VERSION = 17; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -48,11 +48,12 @@ var SKETCH_PER_DEVICE = 3;   // סקיצות ביום לכל טלפון
 var SKETCH_PER_DAY = 80;     // תקרה יומית כוללת (המכסה החינמית של Cloudflare גבוהה יותר)
 var SKETCH_STYLES = {
   fine: 'delicate fine line tattoo, thin single-needle black ink lines, minimal shading',
-  real: 'black and grey realism tattoo sketch, soft pencil shading, detailed',
+  real: 'black and grey realism, soft smooth shading, detailed',
   mini: 'minimalist tattoo, very simple clean black lines, lots of negative space',
   bng: 'black and grey tattoo design, bold outlines with smooth grey shading'
 };
-var SKETCH_PLACES = { arm: 'vertical composition for forearm', hand: 'small compact composition for hand or wrist', back: 'larger composition for upper back', leg: 'vertical composition for leg', ribs: 'flowing vertical composition for ribs' };
+// בכוונה בלי שמות של איברי גוף – אחרת המודל מצייר יד/גב במקום סקיצה על דף
+var SKETCH_PLACES = { arm: 'tall narrow vertical layout', hand: 'small compact simple layout', back: 'large wide detailed layout', leg: 'tall vertical layout', ribs: 'tall flowing curved layout' };
 
 function sketchFolder_() {
   var it = DriveApp.getFoldersByName(SKETCH_FOLDER);
@@ -114,9 +115,9 @@ function sketchPlan_(idea, style, place) {
   if (!subject) { // גיבוי בלי Gemini: תרגום פשוט
     try { subject = LanguageApp.translate(idea, 'iw', 'en'); } catch (e) { subject = idea; }
   }
-  var prompt = 'Original tattoo design sketch: ' + subject + '. ' + (SKETCH_STYLES[style] || SKETCH_STYLES.fine) +
-    (SKETCH_PLACES[place] ? ', ' + SKETCH_PLACES[place] : '') +
-    '. Clean tattoo stencil artwork on plain white paper background, centered, high contrast black ink, flash sheet style, no text, no letters, no signature, no watermark, not a photo, no skin, no people.';
+  var prompt = 'A tattoo flash design drawn in black ink on a flat sheet of plain white paper, scanned, top-down view. The drawing: ' + subject + '. ' +
+    (SKETCH_STYLES[style] || SKETCH_STYLES.fine) + (SKETCH_PLACES[place] ? ', ' + SKETCH_PLACES[place] : '') +
+    '. Flat 2D artwork isolated and centered on pure white background, crisp clean linework, high contrast, original design, without any text or lettering.';
   return { allowed: allowed, reason: reason, prompt: prompt.slice(0, 2000) };
 }
 
