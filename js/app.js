@@ -1025,7 +1025,7 @@ function renderSketchOut(msg) {
   const left = sketchState.left;
   out.innerHTML = `
   <div class="stack" style="gap:12px">
-    <div class="sk-frame" oncontextmenu="return false">
+    <div class="sk-frame">
       ${sketchState.preview ? '<canvas id="sk-canvas" role="img" aria-label="טיוטת הסקיצה עם סימן מים"></canvas>' : '<p class="muted" style="padding:20px;text-align:center">הסקיצה נוצרה ונשמרה אצל תום. התצוגה המקדימה לא נטענה – אפשר לשלוח אותה לתום בכל זאת.</p>'}
       <span class="sk-badge">טיוטה</span>
     </div>
@@ -1040,6 +1040,7 @@ function renderSketchOut(msg) {
     <button type="button" class="link-btn" id="sk-report" style="align-self:center;font-size:.85rem">⚑ דיווח על תוכן לא ראוי</button>
   </div>`;
   if (sketchState.preview) drawSketchPreview($('#sk-canvas'), sketchState.preview);
+  $('.sk-frame')?.addEventListener('contextmenu', (e) => e.preventDefault());
   $('#sk-again').addEventListener('click', () => $('#sk-form').requestSubmit());
   $('#sk-report').addEventListener('click', async () => {
     const why = window.prompt('מה לא תקין בסקיצה? (לא חובה)') ?? null; if (why === null) return;
@@ -1119,6 +1120,7 @@ function loadPromo() {
     .then((r) => r.json())
     .then((j) => {
       const p = j && j.ok && j.promo;
+      if (p && p.image && !/^https:\/\//.test(p.image)) p.image = ''; // תמונות רק בחיבור מאובטח
       state.promo = p && p.until >= todayIso() ? p : null;
       const name = location.hash.replace(/^#\/?/, '').split('/')[0] || 'home';
       if (state.promo && (name === 'home' || name === 'promo') && !$('[data-open-promo]')) {
