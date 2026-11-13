@@ -99,7 +99,7 @@ views.home = () => `
       <a class="btn btn-tint tint-teal" href="#/health"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M12 10v6M9 13h6"/></svg></span>הצהרת בריאות</a>
       <a class="btn btn-tint tint-green" href="https://wa.me/${CONFIG.whatsapp}" target="_blank" rel="noopener"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"/></svg></span>וואטסאפ לתום</a>
     </div>
-    <a class="btn btn-tint tint-rose" href="#/sketch"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.6L12 15l-1.8-4.4L5.5 9l4.7-1.4z"/><path d="M18 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></span>רעיון מקורי – סקיצה ב־AI</a>
+    ${CONFIG.sketchEnabled ? `<a class="btn btn-tint tint-rose" href="#/sketch"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.6L12 15l-1.8-4.4L5.5 9l4.7-1.4z"/><path d="M18 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></span>רעיון מקורי – סקיצה ב־AI</a>` : ''}
     <a class="btn btn-tint tint-violet" href="#/ideas"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>מחפשים השראה? רעיונות מפינטרסט</a>
   </div>
 
@@ -409,7 +409,7 @@ const tabOf = (name, param) => ({ about: 'about', accessibility: 'about', galler
 
 function render() {
   const [rawName, param] = location.hash.replace(/^#\/?/, '').split('/');
-  const name = views[rawName] ? rawName : 'home';
+  const name = views[rawName] && (rawName !== 'sketch' || CONFIG.sketchEnabled) ? rawName : 'home';
   if (name === 'done' && param === 'health' && !state.lastHealth) { location.replace('#/health'); return; }
   const main = $('#main');
   main.innerHTML = views[name](param);
