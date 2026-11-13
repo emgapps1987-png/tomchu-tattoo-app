@@ -1529,7 +1529,8 @@ function initPush() {
   const appId = CONFIG.onesignalAppId; if (!appId) return;
   if (isNative) {
     const go = () => {
-      const OS = window.OneSignal; if (!OS || !OS.initialize) return false;
+      // התוסף חושף את עצמו ב־window.plugins.OneSignal (וב־window.OneSignal.default) – לא ישירות ב־window.OneSignal
+      const OS = (window.plugins && window.plugins.OneSignal) || (window.OneSignal && window.OneSignal.default) || window.OneSignal; if (!OS || !OS.initialize) return false;
       try {
         OS.initialize(appId);
         OS.Location?.setShared?.(false);
@@ -1559,7 +1560,7 @@ function initPush() {
 
 async function pushGranted() {
   const OS = push.os; if (!OS) return true;
-  try { return push.native ? await OS.Notifications.hasPermission() : !!OS.Notifications.permission; } catch (e) { return true; }
+  try { return push.native ? await (OS.Notifications.getPermissionAsync ? OS.Notifications.getPermissionAsync() : OS.Notifications.hasPermission()) : !!OS.Notifications.permission; } catch (e) { return true; }
 }
 
 // מחכים עד שהשירות נטען (עד ~20 שניות), במקום לוותר אחרי בדיקה אחת
