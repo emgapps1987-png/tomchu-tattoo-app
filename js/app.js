@@ -1205,13 +1205,59 @@ async function pushGranted() {
   try { return push.native ? await OS.Notifications.hasPermission() : !!OS.Notifications.permission; } catch (e) { return true; }
 }
 
+// מחכים עד שהשירות נטען (עד ~20 שניות), במקום לוותר אחרי בדיקה אחת
+function pushReady(ms = 20000) {
+  return new Promise((res) => { const t0 = Date.now(); (function w() { if (push.os) return res(true); if (Date.now() - t0 > ms) return res(false); setTimeout(w, 400); })(); });
+}
+
+async function syncBell() {
+  const b = $('#bell-btn'); if (!b) return;
+  if (!push.os) { b.hidden = true; return; }
+  const on = !(await pushDenied()) && await pushGranted();
+  b.hidden = false;
+  b.setAttribute('aria-pressed', String(on));
+  b.setAttribute('aria-label', on ? 'התראות על מבצעים: פעילות' : 'להפעיל התראות על מבצעים');
+}
+
+async function pushDenied() {
+  try { return !push.native && 'Notification' in window && Notification.permission === 'denied'; } catch (e) { return false; }
+}
+
+async function askPushPermission() {
+  try {
+    if (push.native) await push.os.Notifications.requestPermission(true);
+    else await push.os.Notifications.requestPermission();
+  } catch (e) { /* המשתמש סירב או שהדפדפן לא תומך */ }
+  setTimeout(syncBell, 800);
+}
+
 async function maybeAskPush() {
-  if (!push.os || $('#push-dlg') || $('#promo-dlg') || store.get('tt-push-asked')) return;
+  if (!(await pushReady())) return;
+  syncBell();
+  if ($('#push-dlg') || $('#promo-dlg') || store.get('tt-push-asked')) return;
   if (await pushGranted()) return;
   store.set('tt-push-asked', '1');
+  openPushDialog();
+}
+
+async function openPushDialog() {
+  if ($('#push-dlg')) return;
+  const on = await pushGranted(), denied = await pushDenied();
   const dlg = document.createElement('dialog');
   dlg.id = 'push-dlg'; dlg.className = 'promo-dlg push-dlg'; dlg.setAttribute('aria-labelledby', 'push-t');
-  dlg.innerHTML = `
+  const blocked = denied || (push.native && !on && store.get('tt-push-tried'));
+  dlg.innerHTML = on ? `
+    <div class="promo-body">
+      <h2 id="push-t" tabindex="-1">ההתראות פעילות 🔔</h2>
+      <p class="promo-text">תקבלו התראה כשיש מבצע חדש – בערך פעם בחודש. כדי לכבות: הגדרות הטלפון ← התראות ← Tomchu Tattoo.</p>
+      <button type="button" class="btn btn-primary" id="push-no">סגירה</button>
+    </div>` : blocked ? `
+    <div class="promo-body">
+      <h2 id="push-t" tabindex="-1">ההתראות חסומות בטלפון</h2>
+      <p class="promo-text">כדי לקבל התראות על מבצעים, פותחים את הגדרות הטלפון ← התראות ← Tomchu Tattoo ← מאשרים התראות.</p>
+      <button type="button" class="btn btn-primary" id="push-yes">לנסות שוב</button>
+      <button type="button" class="btn btn-ghost" id="push-no">סגירה</button>
+    </div>` : `
     <div class="promo-body">
       <h2 id="push-t" tabindex="-1">לשמוע ראשונים על מבצעים?</h2>
       <p class="promo-text">תום שולחת התראה רק כשיש מבצע חדש – בערך פעם בחודש. בלי ספאם, ואפשר לכבות בכל רגע.</p>
@@ -1222,16 +1268,14 @@ async function maybeAskPush() {
   const close = () => { dlg.close(); dlg.remove(); };
   $('#push-no', dlg).addEventListener('click', close);
   dlg.addEventListener('cancel', (e) => { e.preventDefault(); close(); });
-  $('#push-yes', dlg).addEventListener('click', async () => {
-    close();
-    try {
-      if (push.native) await push.os.Notifications.requestPermission(true);
-      else await push.os.Notifications.requestPermission();
-    } catch (e) { /* המשתמש סירב או שהדפדפן לא תומך */ }
-  });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) close(); });
+  $('#push-yes', dlg)?.addEventListener('click', () => { close(); store.set('tt-push-tried', '1'); askPushPermission(); });
   if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
   $('#push-t', dlg).focus();
 }
+$('#bell-btn')?.addEventListener('click', () => { if (push.os) openPushDialog(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) syncBell(); });
+pushReady().then(syncBell);
 
 syncTop();
 playIntro();
