@@ -371,3 +371,39 @@ dialog.promo-dlg::backdrop { background: rgba(6,5,8,.72); }
 .try-row { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 12px; }
 .try-row label { font-weight: 700; font-size: .95rem; }
 .try-row input[type=range] { width: 100%; min-height: 36px; accent-color: #4CC3E8; direction: ltr; }
+
+/* יומן החלמה */
+.care-top { display: flex; align-items: center; gap: 16px; }
+.care-ring { width: 92px; height: 92px; border-radius: 50%; flex: none; background: conic-gradient(#4CC3E8 0 var(--p), var(--line) var(--p) 100%); display: flex; align-items: center; justify-content: center; }
+.care-ring > div { width: 74px; height: 74px; border-radius: 50%; background: var(--bg, #0B0A0D); display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; }
+.care-ring b { font-family: Rubik, sans-serif; font-size: 26px; }
+.care-ring span { font-size: 11px; color: var(--muted, #B3A8B6); }
+.care-kick { font-size: .82rem; font-weight: 700; color: #4CC3E8; }
+.care-now { border-color: #1E4A57; background: #0F1E24; }
+.care-th { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 8px; }
+.care-th span { font-size: .85rem; font-weight: 700; color: #4ADE8C; }
+.care-task { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 0; border: 0; border-top: 1px solid var(--line); background: none; color: inherit; font: inherit; text-align: start; cursor: pointer; }
+.care-task .ck { width: 28px; height: 28px; border-radius: 50%; flex: none; border: 2px solid var(--fline); display: flex; align-items: center; justify-content: center; font-weight: 800; }
+.care-task[aria-pressed="true"] .ck { background: #4ADE8C; border-color: #4ADE8C; color: #0B0A0D; }
+.care-task[aria-pressed="true"] .ck::before { content: "✓"; }
+.care-task[aria-pressed="true"] strong { text-decoration: line-through; opacity: .65; }
+.care-task .muted { font-size: .8rem; }
+.care-feel { display: flex; gap: 8px; }
+.care-feel button { flex: 1; min-height: 60px; border-radius: 14px; border: 1.5px solid var(--fline); background: var(--surface); color: inherit; font: inherit; font-size: .88rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; }
+.care-feel button span { font-size: 1.25rem; }
+.care-feel button[aria-pressed="true"] { border-color: #4CC3E8; background: #0E2A33; font-weight: 700; }
+.care-step { display: flex; gap: 12px; align-items: flex-start; padding: 7px 0; }
+.care-step .dot { width: 22px; height: 22px; border-radius: 50%; flex: none; margin-top: 2px; border: 2px solid var(--fline); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+.care-step .when { font-size: .78rem; font-weight: 700; color: var(--muted, #B3A8B6); }
+.care-step .t { font-size: .95rem; }
+.care-step.past { opacity: .6; }
+.care-step.past .dot { background: #4ADE8C; border-color: #4ADE8C; color: #0B0A0D; }
+.care-step.here .dot { background: #4CC3E8; border-color: #4CC3E8; box-shadow: 0 0 0 4px #1E4A57; }
+.care-step.here .when { color: #4CC3E8; }
+.care-step.here .t { font-weight: 800; }
+.care-rem { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.care-rem input { width: 24px; height: 24px; flex: none; accent-color: #4CC3E8; }
+.care-rem span { display: flex; flex-direction: column; }
+.care-rem .muted { font-size: .82rem; }
+.care-done { border-color: #5A2A58; background: radial-gradient(circle at 50% 0%, #2A1029, var(--surface) 70%); }
+.linklike { background: none; border: 0; padding: 0; color: #8FD3C8; font: inherit; text-decoration: underline; cursor: pointer; min-height: 32px; }

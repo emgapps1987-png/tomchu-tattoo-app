@@ -207,11 +207,56 @@ function galleryItems() {
   return list.map((w) => `<li><button type="button" class="thumb-btn" data-photo="${w.id}" aria-label="${esc(w.alt)} – להגדלה"><img src="${w.src}" alt="" loading="lazy"><span class="badge">${TAGS[w.tag]}</span></button></li>`).join('');
 }
 
-views.care = () => `
-<section class="screen" aria-labelledby="h">
-  <a class="back" href="#/home">${icon.back}חזרה</a>
-  <div class="stack"><h1 id="h">טיפול בקעקוע החדש</h1><p class="muted">${esc(CARE.intro)}</p></div>
-  <ol class="steps">
+// ---------------------------------------------------------------------
+// יומן החלמה – משולב במדריך. הכול נשמר בטלפון בלבד (tt-care)
+// ---------------------------------------------------------------------
+const careLoad = () => { try { const j = JSON.parse(store.get('tt-care') || 'null'); return j && /^\d{4}-\d\d-\d\d$/.test(j.start) ? j : null; } catch (e) { return null; } };
+const careSave = (j) => { if (j) store.set('tt-care', JSON.stringify(j)); else { try { localStorage.removeItem('tt-care'); } catch (e) {} } };
+const dayDiff = (from, to) => Math.round((Date.parse(to) - Date.parse(from)) / 864e5);
+const carePhase = (i) => (i <= 0 ? 0 : i <= 3 ? 1 : i <= 14 ? 2 : i <= 29 ? 3 : 4);
+const CARE_HEAD = ['היום הראשון – שומרים על הכיסוי', 'שומרים על ניקיון', 'מגרד? זה סימן שהוא מחלים 💙', 'כמעט שם – בלי שמש ובלי מים עומדים'];
+const careTasks = (i) => (i <= 14
+  ? [['שטיפה + משחה – בוקר', 'מים פושרים, סבון עדין, ייבוש בטפיחות'], ['שטיפה + משחה – צהריים', 'שכבה דקה בלבד'], ['שטיפה + משחה – ערב', 'ולא לגרד 😉']]
+  : [['קרם לחות בלי בישום', 'פעם–פעמיים ביום'], ['בלי שמש ישירה, ים, בריכה או ג׳קוזי', 'מקלחת רגילה – כן']]);
+const careLN = () => (isNative && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) || null;
+
+async function careCancelReminders() {
+  const P = careLN(); if (!P) return;
+  try {
+    const pend = await P.getPending();
+    const ids = ((pend && pend.notifications) || []).filter((n) => n.id >= 7000 && n.id < 7200).map((n) => ({ id: n.id }));
+    if (ids.length) await P.cancel({ notifications: ids });
+  } catch (e) {}
+}
+// תזכורות באפליקציית אנדרואיד: נקבעות מראש בטלפון, בלי שרת
+async function careSchedule(j) {
+  const P = careLN(); if (!P) return false;
+  try {
+    await careCancelReminders();
+    if (!j || !j.rem) return true;
+    const perm = await P.requestPermissions(); if (!perm || perm.display !== 'granted') return false;
+    const now = Date.now(), list = [];
+    const add = (id, i, h, title, body) => {
+      const [y, m, d] = j.start.split('-').map(Number); const at = new Date(y, m - 1, d + i, h, 0, 0, 0);
+      if (at.getTime() > now + 60000) list.push({ id, title, body, schedule: { at, allowWhileIdle: true } });
+    };
+    for (let i = 0; i <= 14; i++) {
+      add(7000 + i * 3, i, 9, 'בוקר טוב! זמן לשטיפה 🫧', `יום ${i + 1} – מים פושרים, ייבוש בטפיחות ושכבה דקה של משחה.`);
+      add(7001 + i * 3, i, 14, 'שטיפה של הצהריים 🫧', `יום ${i + 1} – שכבה דקה של משחה, וזהו.`);
+      add(7002 + i * 3, i, 20, 'זמן לשטיפה של הערב 🫧', `יום ${i + 1} – מים פושרים, ייבוש בטפיחות ומשחה. ולא לגרד 😉`);
+    }
+    add(7100, 15, 10, 'שבועיים! הקילופים מאחורייך ✨', 'מהיום אפשר לעבור לקרם לחות. עוד שבועיים בלי שמש ובריכה.');
+    add(7101, 30, 10, 'הקעקוע החלים! 🏅', '30 יום של שמירה – כל הכבוד. מעכשיו רק קרם הגנה בשמש.');
+    if (list.length) await P.schedule({ notifications: list });
+    return true;
+  } catch (e) { return false; }
+}
+(function careTapListener() {
+  const go = () => { const P = careLN(); if (!P) return false; try { P.addListener('localNotificationActionPerformed', () => { location.hash = '#/care'; }); } catch (e) {} return true; };
+  if (isNative && !go()) document.addEventListener('deviceready', go, { once: true });
+})();
+
+const careGuide = () => `  <ol class="steps">
     ${CARE.steps.map((s, i) => `<li><span class="rail" aria-hidden="true"><span class="num" style="background:${FEATHER[i % 4].c};color:#fff">${i + 1}</span><span class="line"></span></span>
       <div class="body"><span class="when">${esc(s.when)}</span><h2>${esc(s.title)}</h2><p class="muted">${esc(s.text)}</p></div></li>`).join('')}
   </ol>
@@ -225,7 +270,72 @@ views.care = () => `
     <p class="muted">אני זמינה בוואטסאפ לכל שאלה בתהליך ההחלמה.</p>
     <a class="btn btn-primary" href="${waLink('היי תום, יש לי שאלה על ההחלמה של הקעקוע:')}" target="_blank" rel="noopener">שאלה לתום בוואטסאפ</a>
   </div>
+`;
+
+function careStart() {
+  return `
+  <div class="card stack care-start" style="gap:14px">
+    <div class="stack" style="gap:4px"><h2 style="margin:0">יומן החלמה אישי</h2>
+      <p class="muted" style="margin:0">ספרו לנו מתי עשיתם את הקעקוע, ונלווה אתכם יום־יום עד שהעור מחלים.</p></div>
+    <div class="field"><label for="care-date">מתי עשיתם את הקעקוע?</label>
+      <div class="chips" style="margin-bottom:8px"><button type="button" class="chip-btn" data-care-day="0" aria-pressed="true">היום</button><button type="button" class="chip-btn" data-care-day="1" aria-pressed="false">אתמול</button></div>
+      <input type="date" class="fld" id="care-date" value="${todayIso()}" max="${todayIso()}"></div>
+    ${careLN() ? `<label class="care-rem"><input type="checkbox" id="care-rem" checked><span><strong>תזכורות לשטיפה ומשחה</strong><span class="muted">בוקר, צהריים וערב · רק בשבועיים הראשונים</span></span></label>` : ''}
+    <p class="sk-err" id="care-err" role="alert" hidden></p>
+    <button type="button" class="btn btn-primary" id="care-go">להתחיל את היומן</button>
+  </div>`;
+}
+
+function careJournal(j) {
+  const today = todayIso(), i = dayDiff(j.start, today), ph = carePhase(i);
+  if (ph === 4) return `
+  <div class="card stack care-done" style="gap:10px;text-align:center;align-items:center">
+    <span style="font-size:44px" aria-hidden="true">🏅</span>
+    <h2 style="margin:0">הקעקוע החלים!</h2>
+    <p class="muted" style="margin:0">30 יום של שמירה – כל הכבוד. מעכשיו רק קרם הגנה (SPF 50) בשמש, והוא יישאר חד לשנים.</p>
+    <a class="btn btn-primary" style="width:100%" href="${waLink('היי תום, הקעקוע החלים! הנה תמונה של התוצאה 🙂')}" target="_blank" rel="noopener">לשלוח לתום תמונה של התוצאה</a>
+    <button type="button" class="btn btn-ghost" id="care-reset">לסיים את היומן</button>
+  </div>`;
+  const tasks = careTasks(i), done = (j.done && j.done[today]) || [], feel = (j.feel && j.feel[today]) || '';
+  const pct = Math.min(100, Math.round((i + 1) / 30 * 100));
+  const feelMsg = { good: 'מעולה! ממשיכים ככה 💙', itch: 'גירוד וקילוף הם חלק טבעי מההחלמה. לא מגרדים ולא מקלפים – אפשר לטפוח קלות ולמרוח שכבה דקה של משחה.', odd: '' }[feel] || '';
+  return `
+  <div class="care-top">
+    <div class="care-ring" style="--p:${pct}%" role="img" aria-label="יום ${i + 1} מתוך 30"><div><b>${i + 1}</b><span>מתוך 30</span></div></div>
+    <div class="stack" style="gap:4px"><span class="care-kick">יום ${i + 1} · ${esc(CARE.steps[ph].title)}</span><h2 style="margin:0">${CARE_HEAD[ph]}</h2></div>
+  </div>
+  <div class="card care-now"><span class="care-kick">מה צפוי היום</span><p style="margin:6px 0 0">${esc(CARE.steps[ph].text)}</p></div>
+  <div class="card stack" style="gap:0">
+    <div class="care-th"><strong>המשימות של היום</strong><span id="care-count">${done.length} מתוך ${tasks.length}</span></div>
+    ${tasks.map((t, k) => `<button type="button" class="care-task" data-care-task="${k}" aria-pressed="${done.includes(k)}"><span class="ck" aria-hidden="true"></span><span class="stack" style="gap:1px"><strong>${t[0]}</strong><span class="muted">${t[1]}</span></span></button>`).join('')}
+  </div>
+  <div class="card stack" style="gap:10px">
+    <strong>איך הקעקוע מרגיש היום?</strong>
+    <div class="care-feel">${[['good', '😊', 'מעולה'], ['itch', '😐', 'מגרד'], ['odd', '😟', 'משהו מוזר']].map(([v, e, l]) => `<button type="button" data-care-feel="${v}" aria-pressed="${feel === v}"><span aria-hidden="true">${e}</span>${l}</button>`).join('')}</div>
+    <div id="care-feel-out" aria-live="polite">${feel === 'odd' ? careOdd() : feelMsg ? `<p class="muted" style="margin:0">${feelMsg}</p>` : ''}</div>
+  </div>
+  <div class="card stack" style="gap:2px">
+    <strong style="margin-bottom:8px">הדרך שלך</strong>
+    ${CARE.steps.map((s, k) => `<div class="care-step${k < ph ? ' past' : k === ph ? ' here' : ''}"><span class="dot" aria-hidden="true">${k < ph ? '✓' : ''}</span><span class="stack" style="gap:0"><span class="when">${esc(s.when)}${k === ph ? ' · את/ה כאן' : ''}</span><span class="t">${esc(s.title)}</span></span></div>`).join('')}
+  </div>
+  <p class="muted" style="text-align:center;font-size:.85rem;margin:0">התחלתם ב־${fmtDate(j.start)} · <button type="button" class="linklike" id="care-reset">איפוס היומן</button></p>`;
+}
+const careOdd = () => `<div class="alert" style="margin:0">${icon.warn}<p><strong>מתי לפנות לרופא/ה:</strong> ${esc(CARE.warning)}</p></div>
+  <a class="btn btn-outline" style="margin-top:10px" href="${waLink('היי תום, משהו בקעקוע נראה לי לא רגיל. מצרפ/ת תמונה:')}" target="_blank" rel="noopener">לשלוח תמונה לתום בוואטסאפ</a>`;
+
+views.care = () => {
+  const j = careLoad();
+  return `
+<section class="screen" aria-labelledby="h">
+  <a class="back" href="#/home">${icon.back}חזרה</a>
+  <div class="stack"><h1 id="h">${j ? 'יומן ההחלמה שלי' : 'טיפול בקעקוע החדש'}</h1>${j ? '' : `<p class="muted">${esc(CARE.intro)}</p>`}</div>
+  ${j ? careJournal(j) : careStart()}
+  ${j ? '<h2 style="margin:8px 0 0">המדריך המלא</h2>' : ''}
+  ${careGuide()}
 </section>`;
+};
+
+
 
 views.articles = () => `
 <section class="screen" aria-labelledby="h">
@@ -428,6 +538,48 @@ let rendered = false;
 // התנהגות לכל מסך
 // ---------------------------------------------------------------------
 const binders = {};
+binders.care = () => {
+  const j = careLoad();
+  if (!j) {
+    const date = $('#care-date'), err = $('#care-err');
+    $$('[data-care-day]').forEach((b) => b.addEventListener('click', () => {
+      const d = new Date(); d.setDate(d.getDate() - Number(b.dataset.careDay)); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      date.value = d.toISOString().slice(0, 10);
+      $$('[data-care-day]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    }));
+    date?.addEventListener('input', () => $$('[data-care-day]').forEach((x) => x.setAttribute('aria-pressed', 'false')));
+    $('#care-go')?.addEventListener('click', async () => {
+      const v = date.value, today = todayIso();
+      if (!/^\d{4}-\d\d-\d\d$/.test(v) || v > today) { err.textContent = 'בחרו תאריך – היום או יום קודם.'; err.hidden = false; return; }
+      const nj = { start: v, rem: !!($('#care-rem') && $('#care-rem').checked), done: {}, feel: {} };
+      careSave(nj);
+      if (nj.rem) { const ok = await careSchedule(nj); if (!ok) { nj.rem = false; careSave(nj); } }
+      render();
+    });
+    return;
+  }
+  const today = todayIso();
+  $$('[data-care-task]').forEach((b) => b.addEventListener('click', () => {
+    const cur = careLoad(); if (!cur) return; cur.done = cur.done || {};
+    const k = Number(b.dataset.careTask), set = new Set(cur.done[today] || []);
+    if (set.has(k)) set.delete(k); else set.add(k);
+    cur.done = { [today]: [...set] }; careSave(cur); // שומרים רק את היום הנוכחי
+    b.setAttribute('aria-pressed', String(set.has(k)));
+    const c = $('#care-count'); if (c) c.textContent = `${set.size} מתוך ${$$('[data-care-task]').length}`;
+  }));
+  $$('[data-care-feel]').forEach((b) => b.addEventListener('click', () => {
+    const cur = careLoad(); if (!cur) return; const v = b.dataset.careFeel;
+    cur.feel = { [today]: v }; careSave(cur);
+    $$('[data-care-feel]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    const msg = { good: 'מעולה! ממשיכים ככה 💙', itch: 'גירוד וקילוף הם חלק טבעי מההחלמה. לא מגרדים ולא מקלפים – אפשר לטפוח קלות ולמרוח שכבה דקה של משחה.' }[v];
+    $('#care-feel-out').innerHTML = v === 'odd' ? careOdd() : `<p class="muted" style="margin:0">${msg}</p>`;
+  }));
+  $('#care-reset')?.addEventListener('click', async () => {
+    const b = $('#care-reset');
+    if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'בטוח? לחיצה נוספת מוחקת את היומן'; return; }
+    careSave(null); await careCancelReminders(); render();
+  });
+};
 
 binders.gallery = () => {
   $$('[data-filter]').forEach((b) => b.addEventListener('click', () => {
