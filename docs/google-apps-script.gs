@@ -272,6 +272,23 @@ function sketchDraw2_(prompt, style) {
 function sketchLab_(d) {
   var key = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
   if (!key || d.key !== key) return json_({ ok: false, error: 'forbidden' });
+  if (d.action === 'gmodels' || d.action === 'gimg') {
+    var gk = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+    if (d.action === 'gmodels') {
+      var lr = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': gk }, muteHttpExceptions: true });
+      var ms = (JSON.parse(lr.getContentText()).models || []).map(function (m) { return m.name; }).filter(function (n) { return /image|imagen/i.test(n); });
+      return json_({ ok: true, models: ms });
+    }
+    var t1 = Date.now();
+    var gr = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + d.model + ':generateContent', {
+      method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': gk }, muteHttpExceptions: true,
+      payload: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: String(d.prompt || '') }] }], generationConfig: { responseModalities: ['IMAGE', 'TEXT'] } }) });
+    var gj = {}; try { gj = JSON.parse(gr.getContentText()); } catch (e) {}
+    var parts = (gj.candidates && gj.candidates[0] && gj.candidates[0].content && gj.candidates[0].content.parts) || [];
+    var imgp = parts.filter(function (x) { return x.inlineData; })[0];
+    if (gr.getResponseCode() !== 200 || !imgp) return json_({ ok: false, code: gr.getResponseCode(), error: gr.getContentText().slice(0, 500) });
+    return json_({ ok: true, ms: Date.now() - t1, img: 'data:' + imgp.inlineData.mimeType + ';base64,' + imgp.inlineData.data });
+  }
   if (d.action === 'plan') {
     return json_({ ok: true, v1: sketchPlan_(d.idea, d.style, d.place), v2: sketchPlan2_(d.idea, d.style, d.place) });
   }
