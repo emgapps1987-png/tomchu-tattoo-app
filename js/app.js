@@ -1189,6 +1189,7 @@ function initPush() {
   if (!('Notification' in window) || !('serviceWorker' in navigator) || location.protocol !== 'https:') return;
   if (isIOS && !isStandalone) return; // באייפון התראות עובדות רק מהאפליקציה שבמסך הבית
   const base = location.pathname.replace(/[^/]*$/, '');
+  push.webInit = true;
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   window.OneSignalDeferred.push(async (OS) => {
     if (store.get('tt-debug')) try { OS.Debug.setLogLevel('trace'); } catch (e) {}
@@ -1286,5 +1287,13 @@ setTimeout(showInstallTip, 3800);
 window.addEventListener('hashchange', render);
 render();
 if (!isNative && 'serviceWorker' in navigator && location.protocol === 'https:') {
-  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  // כש־OneSignal פעיל הוא רושם את אותו sw.js (עם הפרמטרים שלו). רישום כפול גורם להם להחליף זה את זה,
+  // ולכן רושמים בעצמנו רק אם אין עדיין רישום, או כשההתראות לא נטענות (למשל אייפון בדפדפן)
+  window.addEventListener('load', () => setTimeout(async () => {
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (!reg && !push.webInit) await navigator.serviceWorker.register('sw.js');
+      else if (!reg && push.webInit && !push.os) await navigator.serviceWorker.register('sw.js');
+    } catch (e) {}
+  }, push.webInit ? 25000 : 0));
 }
