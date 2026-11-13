@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 21; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
+var SCRIPT_VERSION = 22; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -239,7 +239,7 @@ function cfRun_(model, prompt, refs) {
   var url = 'https://api.cloudflare.com/client/v4/accounts/' + acc + '/ai/run/' + CF_MODELS_[model];
   var opt = { method: 'post', headers: { Authorization: 'Bearer ' + token }, muteHttpExceptions: true };
   if (model === 'klein4' || model === 'klein9') {
-    var form = { prompt: prompt, width: '1024', height: '1024' };
+    var form = { prompt: prompt, width: '768', height: '1024' };
     (refs || []).forEach(function (u, i) { form['input_image_' + i] = UrlFetchApp.fetch(u).getBlob().setName('ref' + i + '.jpg'); });
     opt.payload = form;
   } else if (model === 'schnell') {
@@ -259,13 +259,27 @@ function cfRun_(model, prompt, refs) {
 
 // הציור: Flux 2 (klein 4B). בקו עדין – עם שתי עבודות של תום כדוגמה לסגנון. אם נכשל – המודל הישן כגיבוי.
 var TOM_REFS_ = ['https://emgapps1987-png.github.io/tomchu-tattoo-app/assets/img/works/work8.jpg', 'https://emgapps1987-png.github.io/tomchu-tattoo-app/assets/img/works/work5.jpg'];
+// גיבוי חינמי כשהמכסה של Cloudflare נגמרת
+function polliDraw_(prompt) {
+  var url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt.slice(0, 1200)) +
+    '?model=flux&width=768&height=1024&nologo=true&private=true&safe=true&seed=' + Math.floor(Math.random() * 1e9);
+  var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
+  var ct = String(res.getHeaders()['Content-Type'] || res.getHeaders()['content-type'] || '');
+  if (res.getResponseCode() !== 200 || ct.indexOf('image/') !== 0) throw new Error('polli ' + res.getResponseCode() + ' ' + ct);
+  return res.getBlob().setContentType(ct);
+}
+
 function sketchDraw2_(prompt, style) {
   var withTom = style === 'fine' || !style;
   var p = withTom ? prompt.replace('Style: ', 'Style: match the linework, line weight and dotwork style of the reference tattoo images (draw a NEW design on a white background, not on skin); ') : prompt;
   try { return cfRun_('klein4', p, withTom ? TOM_REFS_ : null); }
   catch (e) {
     console.warn('klein4: ' + e);
-    try { return cfRun_('schnell', prompt); } catch (e2) { console.warn('schnell: ' + e2); throw new Error(/4006|daily free allocation/.test(String(e2)) ? 'quota' : /429/.test(String(e2)) ? 'busy' : 'draw failed'); }
+    var e2 = null;
+    if (!/4006|daily free allocation/.test(String(e))) { try { return cfRun_('schnell', prompt); } catch (x) { e2 = x; console.warn('schnell: ' + x); } }
+    try { return polliDraw_(prompt); } catch (e3) { console.warn('pollinations: ' + e3); }
+    var all = String(e) + ' ' + String(e2 || '');
+    throw new Error(/4006|daily free allocation/.test(all) ? 'quota' : /429/.test(all) ? 'busy' : 'draw failed');
   }
 }
 
@@ -288,6 +302,10 @@ function sketchLab_(d) {
     var imgp = parts.filter(function (x) { return x.inlineData; })[0];
     if (gr.getResponseCode() !== 200 || !imgp) return json_({ ok: false, code: gr.getResponseCode(), error: gr.getContentText().slice(0, 500) });
     return json_({ ok: true, ms: Date.now() - t1, img: 'data:' + imgp.inlineData.mimeType + ';base64,' + imgp.inlineData.data });
+  }
+  if (d.action === 'polli') {
+    try { var pb = polliDraw_(String(d.prompt || '')); return json_({ ok: true, img: 'data:' + pb.getContentType() + ';base64,' + Utilities.base64Encode(pb.getBytes()) }); }
+    catch (e) { return json_({ ok: false, error: String(e) }); }
   }
   if (d.action === 'plan') {
     return json_({ ok: true, v1: sketchPlan_(d.idea, d.style, d.place), v2: sketchPlan2_(d.idea, d.style, d.place) });
