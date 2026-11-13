@@ -99,6 +99,7 @@ views.home = () => `
       <a class="btn btn-tint tint-teal" href="#/health"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M12 10v6M9 13h6"/></svg></span>הצהרת בריאות</a>
       <a class="btn btn-tint tint-green" href="https://wa.me/${CONFIG.whatsapp}" target="_blank" rel="noopener"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"/></svg></span>וואטסאפ לתום</a>
     </div>
+    <a class="btn btn-tint tint-sky" href="#/tryon"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="3"/><circle cx="12" cy="12" r="3.2"/></svg></span>איך זה ייראה עליי? – הדמיה על הגוף</a>
     ${CONFIG.sketchEnabled ? `<a class="btn btn-tint tint-rose" href="#/sketch"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.6L12 15l-1.8-4.4L5.5 9l4.7-1.4z"/><path d="M18 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></span>רעיון מקורי – סקיצה ב־AI</a>` : ''}
     <a class="btn btn-tint tint-violet" href="#/ideas"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>מחפשים השראה? רעיונות מפינטרסט</a>
   </div>
@@ -404,7 +405,7 @@ views.accessibility = () => `
 // ---------------------------------------------------------------------
 // ניתוב
 // ---------------------------------------------------------------------
-const titles = { home: 'בית', about: 'תום', gallery: 'עבודות', care: 'מדריך ההחלמה', articles: 'מאמרים', article: 'מאמר', contact: 'פנייה לתום', health: 'הצהרת בריאות', done: 'תודה', accessibility: 'הצהרת נגישות', promo: 'מבצע החודש', ideas: 'רעיונות מפינטרסט', sketch: 'רעיון מקורי' };
+const titles = { home: 'בית', about: 'תום', gallery: 'עבודות', care: 'מדריך ההחלמה', articles: 'מאמרים', article: 'מאמר', contact: 'פנייה לתום', health: 'הצהרת בריאות', done: 'תודה', accessibility: 'הצהרת נגישות', promo: 'מבצע החודש', ideas: 'רעיונות מפינטרסט', sketch: 'רעיון מקורי', tryon: 'הדמיה על הגוף' };
 const tabOf = (name, param) => ({ about: 'about', accessibility: 'about', gallery: 'gallery', contact: 'contact', health: 'health', done: param === 'health' ? 'health' : 'contact' }[name] || 'home');
 
 function render() {
@@ -1091,6 +1092,190 @@ binders.sketch = () => {
       renderSketchOut();
     } catch (err) { renderSketchOut('אין חיבור כרגע – נסו שוב בעוד רגע'); }
     finally { sketchState.busy = false; const b2 = $('#sk-go'); if (b2) { b2.disabled = false; b2.textContent = '✨ צרו לי סקיצה'; } }
+  });
+};
+
+// ---------------------------------------------------------------------
+// הדמיה על הגוף – מצלמים את המקום, מעלים סקיצה, והאפליקציה מסירה את הרקע ו"מטמיעה" את הדיו בעור.
+// הכול קורה בטלפון: התמונות לא נשלחות לשום שרת.
+// ---------------------------------------------------------------------
+const tryState = { body: null, src: null, ink: null, x: 0.5, y: 0.5, size: 0.45, rot: 0, clean: 200, fade: 0.85 };
+
+function loadImageFile(file) {
+  return new Promise((ok, bad) => {
+    if (!file || !/^image\//.test(file.type)) return bad(new Error('type'));
+    const url = URL.createObjectURL(file), im = new Image();
+    im.onload = () => { URL.revokeObjectURL(url); ok(im); };
+    im.onerror = () => { URL.revokeObjectURL(url); bad(new Error('load')); };
+    im.src = url;
+  });
+}
+// מקטינים לתמונה נוחה לעבודה (גם חוסך זיכרון בטלפון)
+function toCanvas(im, max) {
+  const k = Math.min(1, max / Math.max(im.naturalWidth || im.width, im.naturalHeight || im.height));
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round((im.naturalWidth || im.width) * k)); c.height = Math.max(1, Math.round((im.naturalHeight || im.height) * k));
+  c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+  return c;
+}
+// הסרת רקע: כל מה שבהיר הופך לשקוף, והקווים הכהים נשארים. clean = כמה בהיר נחשב "רקע"
+function makeInk() {
+  const s = tryState.src; if (!s) return;
+  const c = document.createElement('canvas'); c.width = s.width; c.height = s.height;
+  const x = c.getContext('2d'); x.drawImage(s, 0, 0);
+  const d = x.getImageData(0, 0, c.width, c.height), p = d.data, t = tryState.clean;
+  for (let i = 0; i < p.length; i += 4) {
+    const lum = 0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2];
+    const a = Math.max(0, Math.min(1, (t - lum) / 70));
+    p[i + 3] = Math.round(p[i + 3] * a);
+  }
+  x.putImageData(d, 0, 0);
+  tryState.ink = c;
+}
+function paintTry(cv, forExport) {
+  const b = tryState.body; if (!b || !cv) return;
+  const ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  ctx.drawImage(b, 0, 0, W, H);
+  const k = tryState.ink;
+  if (k) {
+    const w = W * tryState.size, h = w * k.height / k.width;
+    ctx.save();
+    ctx.translate(W * tryState.x, H * tryState.y); ctx.rotate(tryState.rot * Math.PI / 180);
+    ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = tryState.fade; // הדיו מקבל את גוון העור והצל
+    ctx.drawImage(k, -w / 2, -h / 2, w, h);
+    ctx.restore();
+  }
+  if (forExport) {
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 0.75;
+    ctx.font = `600 ${Math.round(W / 34)}px Heebo, Arial, sans-serif`; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillText('Tomchu Tattoo · הדמיה', W * 0.03 + 1, H - W * 0.03 + 1);
+    ctx.fillStyle = '#fff'; ctx.fillText('Tomchu Tattoo · הדמיה', W * 0.03, H - W * 0.03);
+    ctx.globalAlpha = 1;
+  }
+}
+
+const tryPick = (id, label, hint, done) => `
+  <label class="try-pick${done ? ' done' : ''}" for="${id}">
+    <span class="try-pick-n" aria-hidden="true">${done ? '✓' : id === 'try-body' ? '1' : '2'}</span>
+    <span class="stack" style="gap:2px"><strong>${label}</strong><span class="muted" style="font-size:.85rem">${hint}</span></span>
+    <input type="file" id="${id}" accept="image/*" class="sr-only">
+  </label>`;
+
+views.tryon = () => `
+<section class="screen" aria-labelledby="h">
+  <div class="stack" style="gap:6px">
+    <span class="kicker" style="color:#4CC3E8;font-weight:700;font-size:.9rem">לפני שמחליטים</span>
+    <h1 id="h">איך זה ייראה עליי?</h1>
+    <p class="muted">מצלמים את המקום על הגוף, מעלים סקיצה או ציור – ורואים את הקעקוע עליכם. התמונות נשארות בטלפון שלכם.</p>
+  </div>
+  <div class="stack" style="gap:10px">
+    ${tryPick('try-body', 'תמונה של המקום על הגוף', 'צילום ישר, באור טוב', !!tryState.body)}
+    ${tryPick('try-art', 'הסקיצה או הציור', 'הכי טוב: קווים כהים על רקע בהיר', !!tryState.src)}
+  </div>
+  <p class="sk-err" id="try-err" role="alert" hidden></p>
+  <div id="try-stage-wrap" ${tryState.body ? '' : 'hidden'}>
+    <div class="try-stage"><canvas id="try-cv" role="img" aria-label="הדמיה של הקעקוע על הגוף"></canvas></div>
+    <p class="muted" style="text-align:center;font-size:.85rem;margin:8px 0 0" id="try-hint">${tryState.src ? 'גוררים באצבע כדי להזיז · שתי אצבעות להגדלה ולסיבוב' : 'עכשיו מעלים את הסקיצה'}</p>
+  </div>
+  <div class="card stack" id="try-tools" style="gap:14px" ${tryState.body && tryState.src ? '' : 'hidden'}>
+    ${[['size', 'גודל', 8, 120, Math.round(tryState.size * 100)], ['rot', 'סיבוב', -180, 180, tryState.rot], ['clean', 'ניקוי רקע', 90, 250, tryState.clean], ['fade', 'עוצמת הדיו', 30, 100, Math.round(tryState.fade * 100)]]
+      .map(([k, l, mn, mx, v]) => `<div class="try-row"><label for="try-${k}">${l}</label><input type="range" id="try-${k}" min="${mn}" max="${mx}" value="${v}"></div>`).join('')}
+    <p class="muted" style="font-size:.85rem;margin:0">"ניקוי רקע" מסיר את הדף שמסביב לציור. "עוצמת הדיו" נמוכה מראה איך הקעקוע ייראה אחרי שיחלים.</p>
+  </div>
+  <div class="stack" id="try-actions" style="gap:10px" ${tryState.body && tryState.src ? '' : 'hidden'}>
+    <button type="button" class="btn btn-primary" id="try-send">לשלוח את ההדמיה לתום</button>
+    <button type="button" class="btn btn-outline" id="try-save">לשמור תמונה</button>
+    <p class="muted" style="font-size:.85rem;text-align:center;margin:0">זו הדמיה להמחשה בלבד. את הגודל והמיקום הסופיים קובעים יחד עם תום בסטודיו.</p>
+  </div>
+</section>`;
+
+binders.tryon = () => {
+  const cv = $('#try-cv'), err = $('#try-err');
+  const fit = () => {
+    const b = tryState.body; if (!b) return;
+    const w = Math.min(1200, b.width); cv.width = w; cv.height = Math.round(w * b.height / b.width);
+    paintTry(cv);
+  };
+  const showErr = (m) => { err.textContent = m; err.hidden = !m; if (m) announce(m); };
+  const refresh = () => { tryState.jump = true; render(); };
+  $('#try-body').addEventListener('change', async (e) => {
+    try { tryState.body = toCanvas(await loadImageFile(e.target.files[0]), 1600); showErr(''); refresh(); }
+    catch (x) { showErr('לא הצלחנו לפתוח את התמונה. נסו תמונה אחרת.'); }
+  });
+  $('#try-art').addEventListener('change', async (e) => {
+    try { tryState.src = toCanvas(await loadImageFile(e.target.files[0]), 900); makeInk(); showErr(''); refresh(); }
+    catch (x) { showErr('לא הצלחנו לפתוח את הסקיצה. נסו תמונה אחרת.'); }
+  });
+  if (!tryState.body) return;
+  fit();
+  if (tryState.jump) { tryState.jump = false; setTimeout(() => $('#try-stage-wrap')?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 60); }
+
+  // מחוונים
+  const on = (id, fn) => $(id)?.addEventListener('input', (e) => { fn(Number(e.target.value)); paintTry(cv); });
+  on('#try-size', (v) => { tryState.size = v / 100; });
+  on('#try-rot', (v) => { tryState.rot = v; });
+  on('#try-fade', (v) => { tryState.fade = v / 100; });
+  let cleanT = 0;
+  $('#try-clean')?.addEventListener('input', (e) => { tryState.clean = Number(e.target.value); clearTimeout(cleanT); cleanT = setTimeout(() => { makeInk(); paintTry(cv); }, 60); });
+
+  // מגע: אצבע אחת מזיזה, שתיים מגדילות ומסובבות
+  const pts = new Map(); let g = null;
+  const pos = (e) => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height }; };
+  const two = () => { const [a, b] = [...pts.values()]; return { d: Math.hypot(a.x - b.x, a.y - b.y), ang: Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI, cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 }; };
+  const start = () => {
+    if (pts.size === 1) { const p = [...pts.values()][0]; g = { one: true, px: p.x, py: p.y, x: tryState.x, y: tryState.y }; }
+    else if (pts.size === 2) { const t = two(); g = { one: false, d: t.d || 0.001, ang: t.ang, size: tryState.size, rot: tryState.rot, cx: t.cx, cy: t.cy, x: tryState.x, y: tryState.y }; }
+    else g = null;
+  };
+  cv.addEventListener('pointerdown', (e) => { if (!tryState.ink) return; try { cv.setPointerCapture(e.pointerId); } catch (x) {} pts.set(e.pointerId, pos(e)); start(); });
+  cv.addEventListener('pointermove', (e) => {
+    if (!pts.has(e.pointerId) || !g) return;
+    pts.set(e.pointerId, pos(e));
+    if (g.one && pts.size === 1) {
+      const p = [...pts.values()][0];
+      tryState.x = Math.max(0, Math.min(1, g.x + p.x - g.px)); tryState.y = Math.max(0, Math.min(1, g.y + p.y - g.py));
+    } else if (!g.one && pts.size === 2) {
+      const t = two();
+      tryState.size = Math.max(0.08, Math.min(1.2, g.size * t.d / g.d));
+      let r = g.rot + t.ang - g.ang; while (r > 180) r -= 360; while (r < -180) r += 360; tryState.rot = Math.round(r);
+      tryState.x = Math.max(0, Math.min(1, g.x + t.cx - g.cx)); tryState.y = Math.max(0, Math.min(1, g.y + t.cy - g.cy));
+      const s = $('#try-size'), ro = $('#try-rot'); if (s) s.value = Math.round(tryState.size * 100); if (ro) ro.value = tryState.rot;
+    }
+    paintTry(cv);
+  });
+  const end = (e) => { pts.delete(e.pointerId); start(); };
+  cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+  // מקלדת: חצים מזיזים
+  cv.tabIndex = 0;
+  cv.addEventListener('keydown', (e) => {
+    const m = { ArrowLeft: [-0.02, 0], ArrowRight: [0.02, 0], ArrowUp: [0, -0.02], ArrowDown: [0, 0.02] }[e.key]; if (!m || !tryState.ink) return;
+    e.preventDefault(); tryState.x = Math.max(0, Math.min(1, tryState.x + m[0])); tryState.y = Math.max(0, Math.min(1, tryState.y + m[1])); paintTry(cv);
+  });
+
+  // שמירה ושליחה
+  const exportBlob = () => new Promise((ok) => {
+    const c = document.createElement('canvas'); c.width = tryState.body.width; c.height = tryState.body.height;
+    paintTry(c, true); c.toBlob((b) => ok(b), 'image/jpeg', 0.9);
+  });
+  const fileOf = (b) => new File([b], 'tomchu-tattoo-preview.jpg', { type: 'image/jpeg' });
+  const canShare = (f) => { try { return !!(navigator.canShare && navigator.canShare({ files: [f] })); } catch (e) { return false; } };
+  const download = (b) => { const u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = 'tomchu-tattoo-preview.jpg'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); };
+  $('#try-save')?.addEventListener('click', async () => {
+    const b = await exportBlob(); if (!b) return showErr('לא הצלחנו לשמור. נסו שוב.');
+    const f = fileOf(b);
+    if (canShare(f)) { try { await navigator.share({ files: [f] }); } catch (e) {} }
+    else if (isNative) showErr('כדי לשמור: צלמו את המסך (כפתור ההפעלה + הנמכת עוצמה).');
+    else { download(b); announce('התמונה נשמרה'); }
+  });
+  $('#try-send')?.addEventListener('click', async () => {
+    const text = 'היי תום, ככה דמיינתי את הקעקוע – מצרפ/ת הדמיה מהאפליקציה 🙂';
+    const b = await exportBlob(); const f = b && fileOf(b);
+    if (f && canShare(f)) { try { await navigator.share({ files: [f], text }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+    if (isNative) { showErr('צלמו את המסך, ואז שלחו את הצילום לתום בוואטסאפ.'); setTimeout(() => openExternal(waLink(text)), 2500); return; }
+    if (b) download(b);
+    showErr('התמונה נשמרה במכשיר. עכשיו נפתח וואטסאפ – צרפו אותה להודעה.');
+    setTimeout(() => openExternal(waLink(text)), 1800);
   });
 };
 

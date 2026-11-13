@@ -357,3 +357,17 @@ dialog.promo-dlg::backdrop { background: rgba(6,5,8,.72); }
 .bell[aria-pressed="true"] { background: var(--pri-soft); border-color: var(--pri); }
 .bell .bell-dot { position: absolute; top: 7px; right: 8px; width: 9px; height: 9px; border-radius: 50%; background: #FF6B9A; box-shadow: 0 0 0 2px var(--surface); }
 .bell[aria-pressed="true"] .bell-dot { display: none; }
+
+/* הדמיה על הגוף */
+.tint-sky { background: #0E2A33; border-color: #4CC3E8; color: #D6F3FC; }
+.tint-sky .chip { background: #1B7F9E; }
+.try-pick { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1.5px dashed var(--fline); border-radius: 14px; background: var(--surface); cursor: pointer; min-height: 64px; }
+.try-pick:focus-within { outline: 2px solid var(--pri); outline-offset: 2px; }
+.try-pick.done { border-style: solid; border-color: #4ADE8C; }
+.try-pick-n { flex: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; background: #1B7F9E; color: #fff; }
+.try-pick.done .try-pick-n { background: #4ADE8C; color: #0B0A0D; }
+.try-stage { border-radius: 16px; overflow: hidden; border: 1px solid var(--fline); background: #000; }
+.try-stage canvas { display: block; width: 100%; height: auto; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.try-row { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 12px; }
+.try-row label { font-weight: 700; font-size: .95rem; }
+.try-row input[type=range] { width: 100%; min-height: 36px; accent-color: #4CC3E8; direction: ltr; }
