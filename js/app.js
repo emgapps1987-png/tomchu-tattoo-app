@@ -1191,6 +1191,7 @@ function initPush() {
   const base = location.pathname.replace(/[^/]*$/, '');
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   window.OneSignalDeferred.push(async (OS) => {
+    if (store.get('tt-debug')) try { OS.Debug.setLogLevel('trace'); } catch (e) {}
     await OS.init({ appId, serviceWorkerPath: base.slice(1) + 'sw.js', serviceWorkerParam: { scope: base } });
     OS.Notifications.addEventListener('click', () => { location.hash = '#/promo'; });
     push.os = OS;
