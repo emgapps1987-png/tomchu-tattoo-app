@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 22; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
+var SCRIPT_VERSION = 23; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -538,6 +538,34 @@ function json_(obj) {
 // =====================================================================
 var PROMO_FOLDER = 'Tomchu – מבצעים';
 
+// קובץ יומן (ICS) עם תזכורות ההחלמה – לאייפון ולאתר. מקבל רק את תאריך הקעקוע, ולא שומר כלום.
+function careIcs_(start) {
+  if (!/^\d{4}-\d\d-\d\d$/.test(start)) return ContentService.createTextOutput('bad date');
+  var tz = 'Asia/Jerusalem', day = 864e5;
+  var s0 = new Date(start + 'T12:00:00Z').getTime();
+  var today = new Date(Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd') + 'T12:00:00Z').getTime();
+  if (isNaN(s0) || s0 > today + day || today - s0 > 60 * day) return ContentService.createTextOutput('bad date');
+  var ymd = function (t) { return new Date(t).toISOString().slice(0, 10).replace(/-/g, ''); };
+  var stamp = Utilities.formatDate(new Date(), 'UTC', "yyyyMMdd'T'HHmmss'Z'");
+  var esc = function (x) { return String(x).replace(/\\/g, '\\\\').replace(/,/g, '\\,').replace(/;/g, '\\;').replace(/\n/g, '\\n'); };
+  var out = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Tomchu Tattoo//Care//HE', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Tomchu Tattoo – החלמה'];
+  var ev = function (uid, t, hh, title, desc, count) {
+    out.push('BEGIN:VEVENT', 'UID:' + uid + '-' + start + '@tomchutattoo', 'DTSTAMP:' + stamp, 'DTSTART:' + ymd(t) + 'T' + hh + '0000', 'DURATION:PT10M');
+    if (count > 1) out.push('RRULE:FREQ=DAILY;COUNT=' + count);
+    out.push('SUMMARY:' + esc(title), 'DESCRIPTION:' + esc(desc), 'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + esc(title), 'TRIGGER:PT0M', 'END:VALARM', 'END:VEVENT');
+  };
+  var first = Math.max(s0, today), left = 15 - Math.round((first - s0) / day);
+  if (left > 0) {
+    ev('wash-am', first, '09', 'קעקוע: שטיפה + משחה 🫧 (בוקר)', 'מים פושרים, סבון עדין, ייבוש בטפיחות ושכבה דקה של משחה.', left);
+    ev('wash-noon', first, '14', 'קעקוע: שטיפה + משחה 🫧 (צהריים)', 'שכבה דקה של משחה, וזהו.', left);
+    ev('wash-pm', first, '20', 'קעקוע: שטיפה + משחה 🫧 (ערב)', 'מים פושרים, ייבוש בטפיחות ומשחה. ולא לגרד 😉', left);
+  }
+  if (s0 + 15 * day >= today) ev('two-weeks', s0 + 15 * day, '10', 'שבועיים לקעקוע ✨', 'מהיום אפשר לעבור לקרם לחות. עוד שבועיים בלי שמש ובריכה.', 1);
+  if (s0 + 30 * day >= today) ev('healed', s0 + 30 * day, '10', 'הקעקוע החלים! 🏅', 'מעכשיו רק קרם הגנה SPF 50 בשמש. מוזמנים לשלוח לתום תמונה של התוצאה.', 1);
+  out.push('END:VCALENDAR');
+  return ContentService.createTextOutput(out.join('\r\n')).setMimeType(ContentService.MimeType.ICAL).downloadAsFile('tomchu-tattoo-care.ics');
+}
+
 function doGet(e) {
   var p = (e && e.parameter) || {};
   if (p.action === 'promo') return json_({ ok: true, promo: activePromo_() });
@@ -547,6 +575,7 @@ function doGet(e) {
     try { return json_({ ok: true, text: LanguageApp.translate(q, 'iw', 'en') }); }
     catch (err) { return json_({ ok: false }); }
   }
+  if (p.action === 'ics') return careIcs_(String(p.start || ''));
   if (p.admin) {
     if (!isAdminKey_(p.admin)) return HtmlService.createHtmlOutput('<p dir="rtl" style="font-family:Arial;font-size:18px;padding:24px">אין גישה.</p>');
     var t = HtmlService.createTemplate(ADMIN_HTML_);

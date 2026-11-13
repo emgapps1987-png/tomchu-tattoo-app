@@ -318,6 +318,12 @@ function careJournal(j) {
     <strong style="margin-bottom:8px">הדרך שלך</strong>
     ${CARE.steps.map((s, k) => `<div class="care-step${k < ph ? ' past' : k === ph ? ' here' : ''}"><span class="dot" aria-hidden="true">${k < ph ? '✓' : ''}</span><span class="stack" style="gap:0"><span class="when">${esc(s.when)}${k === ph ? ' · את/ה כאן' : ''}</span><span class="t">${esc(s.title)}</span></span></div>`).join('')}
   </div>
+  ${!careLN() && CONFIG.healthEndpoint && i <= 29 ? `<div class="card stack" style="gap:8px">
+    <strong>תזכורות ביומן של הטלפון</strong>
+    <p class="muted" style="margin:0;font-size:.9rem">${i <= 14 ? 'מוסיפים ליומן (Apple / Google) תזכורות לשטיפה ומשחה – בוקר, צהריים וערב עד סוף השבועיים הראשונים, ותזכורת ליום שבו הקעקוע מחלים.' : 'מוסיפים ליומן (Apple / Google) תזכורת ליום שבו הקעקוע מחלים.'}</p>
+    <a class="btn btn-outline" id="care-ics" href="${CONFIG.healthEndpoint}?action=ics&start=${j.start}" target="_blank" rel="noopener">להוסיף תזכורות ליומן</a>
+    <p class="muted" style="margin:0;font-size:.82rem">באייפון: בחלון שנפתח לוחצים "הוסף הכול". במחשב ובאנדרואיד: פותחים את הקובץ שירד.</p>
+  </div>` : ''}
   <p class="muted" style="text-align:center;font-size:.85rem;margin:0">התחלתם ב־${fmtDate(j.start)} · <button type="button" class="linklike" id="care-reset">איפוס היומן</button></p>`;
 }
 const careOdd = () => `<div class="alert" style="margin:0">${icon.warn}<p><strong>מתי לפנות לרופא/ה:</strong> ${esc(CARE.warning)}</p></div>
