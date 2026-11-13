@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 17; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
+var SCRIPT_VERSION = 18; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -115,7 +115,7 @@ function sketchPlan_(idea, style, place) {
   if (!subject) { // גיבוי בלי Gemini: תרגום פשוט
     try { subject = LanguageApp.translate(idea, 'iw', 'en'); } catch (e) { subject = idea; }
   }
-  var prompt = 'A tattoo flash design drawn in black ink on a flat sheet of plain white paper, scanned, top-down view. The drawing: ' + subject + '. ' +
+  var prompt = 'Tattoo flash design artwork, black ink linework on a pure white background. The design: ' + subject + '. ' +
     (SKETCH_STYLES[style] || SKETCH_STYLES.fine) + (SKETCH_PLACES[place] ? ', ' + SKETCH_PLACES[place] : '') +
     '. Flat 2D artwork isolated and centered on pure white background, crisp clean linework, high contrast, original design, without any text or lettering.';
   return { allowed: allowed, reason: reason, prompt: prompt.slice(0, 2000) };
@@ -187,7 +187,20 @@ function testSketch() {
   Logger.log('draw ok ' + b.getBytes().length + ' bytes in ' + (Date.now() - t0) + 'ms');
 }
 
+// פעם ביום: סקיצות שלא נשלחו לתום (בלי ✉ בשם) ונוצרו לפני יותר מ־30 יום עוברות לפח
+function sketchCleanup_() {
+  var props = PropertiesService.getScriptProperties();
+  if (props.getProperty('SKETCH_CLEAN') === dayKey_()) return;
+  props.setProperty('SKETCH_CLEAN', dayKey_());
+  var cutoff = Date.now() - 30 * 24 * 3600 * 1000, it = sketchFolder_().getFiles();
+  while (it.hasNext()) {
+    var f = it.next();
+    if (f.getName().indexOf('✉') !== 0 && f.getDateCreated().getTime() < cutoff) f.setTrashed(true);
+  }
+}
+
 function sketchCreate_(d) {
+  try { sketchCleanup_(); } catch (e) { console.warn('sketch cleanup: ' + e); }
   var idea = String(d.idea || '').trim().slice(0, 300);
   if (idea.length < 3) return json_({ ok: false, error: 'כתבו קודם מה הרעיון' });
   var q = sketchQuota_(d.device);
@@ -227,6 +240,7 @@ function sketchSend_(d) {
     '<p style="color:#777;font-size:13px">הסקיצה המלאה מצורפת. הלקוח ראה רק טיוטה קטנה עם סימן מים. נוצר בעזרת AI.</p></div>';
   MailApp.sendEmail({ to: EMAIL_TO, subject: '✨ סקיצה חדשה מהאפליקציה – ' + name, htmlBody: html, attachments: [file.getBlob()] });
   file.setDescription(file.getDescription() + '\nנשלח ע״י: ' + name + ' · ' + phone);
+  if (file.getName().indexOf('✉') !== 0) file.setName('✉ ' + file.getName()); // נשלח – לא נמחק אוטומטית
   return json_({ ok: true });
 }
 
