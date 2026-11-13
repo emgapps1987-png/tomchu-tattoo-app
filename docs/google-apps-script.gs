@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 20; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
+var SCRIPT_VERSION = 21; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -265,7 +265,7 @@ function sketchDraw2_(prompt, style) {
   try { return cfRun_('klein4', p, withTom ? TOM_REFS_ : null); }
   catch (e) {
     console.warn('klein4: ' + e);
-    try { return cfRun_('schnell', prompt); } catch (e2) { console.warn('schnell: ' + e2); throw new Error(/429/.test(String(e2)) ? 'busy' : 'draw failed'); }
+    try { return cfRun_('schnell', prompt); } catch (e2) { console.warn('schnell: ' + e2); throw new Error(/4006|daily free allocation/.test(String(e2)) ? 'quota' : /429/.test(String(e2)) ? 'busy' : 'draw failed'); }
   }
 }
 
@@ -305,7 +305,7 @@ function sketchCreate_(d) {
   var blob;
   try { blob = sketchDraw2_(plan.prompt, String(d.style || 'fine')); }
   catch (e) {
-    console.warn('sketch draw: ' + e); return json_({ ok: false, error: String(e.message) === 'busy' ? 'הציור עמוס כרגע – נסו שוב בעוד דקה' : 'לא הצלחנו לצייר כרגע – נסו שוב', left: q.left }); }
+    console.warn('sketch draw: ' + e); return json_({ ok: false, error: String(e.message) === 'quota' ? 'היום כבר נוצרו הרבה סקיצות והמכסה היומית נגמרה – נסו שוב מחר, או שלחו לתום את הרעיון ב"פנייה לתום".' : String(e.message) === 'busy' ? 'הציור עמוס כרגע – נסו שוב בעוד דקה' : 'לא הצלחנו לצייר כרגע – נסו שוב', left: q.left }); }
   sketchCount_(q);
   var id = Utilities.getUuid().replace(/-/g, '');
   var when = Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'yyyy-MM-dd HHmm');
