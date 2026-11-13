@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 18; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
+var SCRIPT_VERSION = 19; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -187,6 +187,89 @@ function testSketch() {
   Logger.log('draw ok ' + b.getBytes().length + ' bytes in ' + (Date.now() - t0) + 'ms');
 }
 
+// ---------------------------------------------------------------------
+// מעבדת סקיצות (רק עם מפתח הניהול): משווים מודלים והוראות ציור
+// ---------------------------------------------------------------------
+var TOM_STYLE_ = 'in the signature style of a fine-line tattoo artist: loose, expressive, flowing single-needle strokes, elegant gestural lines that overlap freely, delicate dotwork stippling for soft shading, a few small ink dots as accents, airy negative space, minimalist and poetic, slightly abstract';
+var STYLE_V2_ = {
+  fine: TOM_STYLE_,
+  real: 'black and grey realism tattoo design, smooth soft gradient shading, high detail, strong contrast, clean outer silhouette',
+  mini: 'tiny minimalist tattoo, a few clean continuous lines, single line art feel, very simple, lots of empty space',
+  bng: 'black and grey tattoo design, confident bold outlines with smooth whip shading and dotwork, balanced composition'
+};
+var PLACE_V2_ = { arm: 'tall slim vertical composition', hand: 'small compact composition', back: 'large detailed composition with flow', leg: 'tall vertical composition', ribs: 'tall flowing curved composition' };
+
+function sketchPlan2_(idea, style, place) {
+  var apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  var instr = [
+    'You are an experienced tattoo designer. A customer described a tattoo idea (usually in Hebrew). Write an English image-generation prompt for an ORIGINAL tattoo flash design that a tattoo artist could trace as a stencil.',
+    'Customer idea: """' + idea + '"""',
+    'Return JSON {"allowed": boolean, "reason": string, "subject": string}.',
+    'allowed=false for sexual or nude content, hate or extremist symbols, gore, anything unsafe involving minors, real identifiable people or celebrities, copyrighted characters, logos or brands. Otherwise true; reason = short Hebrew explanation only when false.',
+    'subject = 40-70 English words describing ONLY the design: the main motif and its key visual details, supporting elements that add meaning (botanicals, small symbols, linework flourishes), how the elements are arranged and interlock, focal point, and the silhouette and flow of the whole design. Interpret the meaning of the idea creatively but stay faithful to it (e.g. "family" -> intertwined elements, one per family member).',
+    'Never mention colors, paint, paper, background, skin, body parts, photos, people wearing it, pens or tools. No text, letters or numbers in the image; for names or dates describe a small empty banner or space.'
+  ].join('\n');
+  var o = { allowed: true, reason: '', subject: '' };
+  if (apiKey) {
+    var payload = { contents: [{ role: 'user', parts: [{ text: instr }] }],
+      generationConfig: { temperature: 0.7, responseMimeType: 'application/json',
+        responseSchema: { type: 'OBJECT', properties: { allowed: { type: 'BOOLEAN' }, reason: { type: 'STRING' }, subject: { type: 'STRING' } }, required: ['allowed', 'subject'] } } };
+    for (var i = 0; i < 4; i++) {
+      if (i > 0) Utilities.sleep(1000 * i);
+      var res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent', {
+        method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': apiKey }, payload: JSON.stringify(payload), muteHttpExceptions: true });
+      if (res.getResponseCode() === 200) { try { o = JSON.parse(JSON.parse(res.getContentText()).candidates[0].content.parts[0].text); } catch (e) {} break; }
+      if ([429, 500, 503].indexOf(res.getResponseCode()) < 0) break;
+    }
+  }
+  var subject = String(o.subject || '') || idea;
+  var prompt = 'Tattoo flash design, black ink only on a pure white background, isolated and centered, crisp stencil-ready linework. Design: ' + subject + ' Style: ' +
+    (STYLE_V2_[style] || STYLE_V2_.fine) + '. ' + (PLACE_V2_[place] || '') + '. Flat 2D artwork, original, no text or lettering.';
+  return { allowed: o.allowed !== false, reason: String(o.reason || ''), prompt: prompt };
+}
+
+var CF_MODELS_ = {
+  schnell: '@cf/black-forest-labs/flux-1-schnell', klein4: '@cf/black-forest-labs/flux-2-klein-4b', klein9: '@cf/black-forest-labs/flux-2-klein-9b',
+  lucid: '@cf/leonardo/lucid-origin', phoenix: '@cf/leonardo/phoenix-1.0'
+};
+
+function cfRun_(model, prompt, refs) {
+  var token = PropertiesService.getScriptProperties().getProperty('CF_API_TOKEN');
+  var acc = cfAccount_(token);
+  var url = 'https://api.cloudflare.com/client/v4/accounts/' + acc + '/ai/run/' + CF_MODELS_[model];
+  var opt = { method: 'post', headers: { Authorization: 'Bearer ' + token }, muteHttpExceptions: true };
+  if (model === 'klein4' || model === 'klein9') {
+    var form = { prompt: prompt, width: '1024', height: '1024' };
+    (refs || []).forEach(function (u, i) { form['input_image_' + i] = UrlFetchApp.fetch(u).getBlob().setName('ref' + i + '.jpg'); });
+    opt.payload = form;
+  } else if (model === 'schnell') {
+    opt.contentType = 'application/json'; opt.payload = JSON.stringify({ prompt: prompt, steps: 8 });
+  } else {
+    opt.contentType = 'application/json'; opt.payload = JSON.stringify({ prompt: prompt, width: 1024, height: 1024 });
+  }
+  var res = UrlFetchApp.fetch(url, opt), code = res.getResponseCode();
+  var h = res.getHeaders(), ct = String(h['Content-Type'] || h['content-type'] || '');
+  if (code !== 200) throw new Error('cf ' + code + ' ' + res.getContentText().slice(0, 300));
+  if (ct.indexOf('image/') === 0) return res.getBlob();
+  var j = JSON.parse(res.getContentText());
+  var b64 = (j.result && (j.result.image || (j.result.images && j.result.images[0]))) || j.image;
+  if (!b64) throw new Error('no image: ' + res.getContentText().slice(0, 200));
+  return Utilities.newBlob(Utilities.base64Decode(b64), 'image/jpeg');
+}
+
+function sketchLab_(d) {
+  var key = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  if (!key || d.key !== key) return json_({ ok: false, error: 'forbidden' });
+  if (d.action === 'plan') {
+    return json_({ ok: true, v1: sketchPlan_(d.idea, d.style, d.place), v2: sketchPlan2_(d.idea, d.style, d.place) });
+  }
+  var t0 = Date.now();
+  try {
+    var b = cfRun_(d.model, String(d.prompt || ''), d.refs);
+    return json_({ ok: true, ms: Date.now() - t0, img: 'data:' + (b.getContentType() || 'image/jpeg') + ';base64,' + Utilities.base64Encode(b.getBytes()) });
+  } catch (e) { return json_({ ok: false, error: String(e).slice(0, 400) }); }
+}
+
 // פעם ביום: סקיצות שלא נשלחו לתום (בלי ✉ בשם) ונוצרו לפני יותר מ־30 יום עוברות לפח
 function sketchCleanup_() {
   var props = PropertiesService.getScriptProperties();
@@ -262,6 +345,7 @@ function doPost(e) {
     if (d.kind === 'sketch') return sketchCreate_(d);
     if (d.kind === 'sketchSend') return sketchSend_(d);
     if (d.kind === 'sketchReport') return sketchReport_(d);
+    if (d.kind === 'sketchLab') return sketchLab_(d);
     if (!rateOk_()) return json_({ ok: false, error: 'busy' });
     if (d.kind !== 'health') return json_({ ok: false, error: 'unknown kind' });
     if (!d.name || !d.signature || !Array.isArray(d.answers)) return json_({ ok: false, error: 'missing fields' });
