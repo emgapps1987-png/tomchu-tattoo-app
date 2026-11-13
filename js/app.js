@@ -808,6 +808,7 @@ function showInstallTip() {
 const IDEA_STARTS = [
   { he: 'שם של הילד', en: 'baby name script tattoo' },
   { he: 'קעקוע זוגי', en: 'matching couple tattoo' },
+  { he: 'קעקוע משפחתי', en: 'family tattoo ideas' },
   { he: 'זכר לאהוב', en: 'memorial tattoo' },
   { he: 'חיה אהובה', en: 'pet portrait tattoo' },
   { he: 'ציטוט', en: 'quote script tattoo' }
