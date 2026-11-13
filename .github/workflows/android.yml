@@ -36,7 +36,7 @@ jobs:
 
       # באנדרואיד Capacitor מזריק סקריפט גישור קטן לתוך הדף, ולכן שם מתירים סקריפט פנימי (עדיין בלי סקריפטים מאתרים זרים)
       - name: CSP for the Android WebView
-        run: sed -i "s#script-src 'self' https://cdn.onesignal.com#script-src 'self' 'unsafe-inline'#" www/index.html && grep -o "script-src[^;]*" www/index.html
+        run: sed -i "s#script-src 'self' https://cdn.onesignal.com https://api.onesignal.com https://onesignal.com#script-src 'self' 'unsafe-inline'#" www/index.html && grep -o "script-src[^;]*" www/index.html
 
       - name: Create Android project
         run: npx cap add android
