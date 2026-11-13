@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 19; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
+var SCRIPT_VERSION = 20; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -257,6 +257,18 @@ function cfRun_(model, prompt, refs) {
   return Utilities.newBlob(Utilities.base64Decode(b64), 'image/jpeg');
 }
 
+// הציור: Flux 2 (klein 4B). בקו עדין – עם שתי עבודות של תום כדוגמה לסגנון. אם נכשל – המודל הישן כגיבוי.
+var TOM_REFS_ = ['https://emgapps1987-png.github.io/tomchu-tattoo-app/assets/img/works/work8.jpg', 'https://emgapps1987-png.github.io/tomchu-tattoo-app/assets/img/works/work5.jpg'];
+function sketchDraw2_(prompt, style) {
+  var withTom = style === 'fine' || !style;
+  var p = withTom ? prompt.replace('Style: ', 'Style: match the linework, line weight and dotwork style of the reference tattoo images (draw a NEW design on a white background, not on skin); ') : prompt;
+  try { return cfRun_('klein4', p, withTom ? TOM_REFS_ : null); }
+  catch (e) {
+    console.warn('klein4: ' + e);
+    try { return cfRun_('schnell', prompt); } catch (e2) { console.warn('schnell: ' + e2); throw new Error(/429/.test(String(e2)) ? 'busy' : 'draw failed'); }
+  }
+}
+
 function sketchLab_(d) {
   var key = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
   if (!key || d.key !== key) return json_({ ok: false, error: 'forbidden' });
@@ -288,10 +300,10 @@ function sketchCreate_(d) {
   if (idea.length < 3) return json_({ ok: false, error: 'כתבו קודם מה הרעיון' });
   var q = sketchQuota_(d.device);
   if (!q.ok) return json_({ ok: false, error: q.used >= SKETCH_PER_DEVICE ? 'הגעתם ל־' + SKETCH_PER_DEVICE + ' סקיצות היום. אפשר לחזור מחר, או לשלוח לתום את הרעיון בפנייה.' : 'היום כבר נוצרו הרבה סקיצות – נסו שוב מחר', left: 0 });
-  var plan = sketchPlan_(idea, String(d.style || ''), String(d.place || ''));
+  var plan = sketchPlan2_(idea, String(d.style || ''), String(d.place || ''));
   if (!plan.allowed) return json_({ ok: false, error: 'אי אפשר ליצור את הסקיצה הזו' + (plan.reason ? ': ' + plan.reason : '.') + ' נסו רעיון אחר.', left: q.left });
   var blob;
-  try { blob = cfDraw_(plan.prompt); }
+  try { blob = sketchDraw2_(plan.prompt, String(d.style || 'fine')); }
   catch (e) {
     console.warn('sketch draw: ' + e); return json_({ ok: false, error: String(e.message) === 'busy' ? 'הציור עמוס כרגע – נסו שוב בעוד דקה' : 'לא הצלחנו לצייר כרגע – נסו שוב', left: q.left }); }
   sketchCount_(q);
