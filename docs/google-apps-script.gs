@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 14; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
+var SCRIPT_VERSION = 15; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -86,7 +86,7 @@ function sketchPlan_(idea, style, place) {
     'Customer idea: """' + idea + '"""',
     'Return JSON {"allowed": boolean, "reason": string, "subject": string}.',
     'allowed=false if the idea is sexual or nude, hateful or extremist symbols, gore, depicts a minor in any unsafe way, asks for a real identifiable person or celebrity, or asks for a copyrighted character, logo or brand. Otherwise allowed=true.',
-    'subject = a short vivid English description (max 40 words) of what to draw, original composition, no text or letters in the image (if the customer wants a name or quote, describe a decorative space for it instead of writing letters).',
+    'subject = a short English description (max 35 words) of WHAT to draw and the composition only: the objects, pose and arrangement. Original design, not copied from any artist. Do NOT mention colors, watercolor, paint, background, style or medium (the style is added separately; it is always black ink line art). No text or letters in the image: if the customer wants a name, date or quote, describe an empty decorative banner or space for it instead.',
     'reason = short Hebrew explanation only when allowed=false.'
   ].join('\n');
   var subject = '', allowed = true, reason = '';
