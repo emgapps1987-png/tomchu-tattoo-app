@@ -1261,9 +1261,20 @@ binders.tryon = () => {
   const fileOf = (b) => new File([b], 'tomchu-tattoo-preview.jpg', { type: 'image/jpeg' });
   const canShare = (f) => { try { return !!(navigator.canShare && navigator.canShare({ files: [f] })); } catch (e) { return false; } };
   const download = (b) => { const u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = 'tomchu-tattoo-preview.jpg'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); };
+  // באפליקציית אנדרואיד: שומרים קובץ זמני ופותחים את חלון השיתוף של הטלפון (וואטסאפ, גלריה...)
+  const nativeShare = async (b, text) => {
+    const P = window.Capacitor && window.Capacitor.Plugins; if (!isNative || !P || !P.Filesystem || !P.Share) return false;
+    try {
+      const data = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.onerror = no; r.readAsDataURL(b); });
+      const f = await P.Filesystem.writeFile({ path: 'tomchu-tattoo-preview.jpg', data, directory: 'CACHE' });
+      await P.Share.share(text ? { files: [f.uri], text, dialogTitle: 'שליחת ההדמיה' } : { files: [f.uri], dialogTitle: 'שמירה או שיתוף' });
+      return true;
+    } catch (e) { return /cancel/i.test(String(e && e.message)) ? true : false; }
+  };
   $('#try-save')?.addEventListener('click', async () => {
     const b = await exportBlob(); if (!b) return showErr('לא הצלחנו לשמור. נסו שוב.');
     const f = fileOf(b);
+    if (await nativeShare(b)) return;
     if (canShare(f)) { try { await navigator.share({ files: [f] }); } catch (e) {} }
     else if (isNative) showErr('כדי לשמור: צלמו את המסך (כפתור ההפעלה + הנמכת עוצמה).');
     else { download(b); announce('התמונה נשמרה'); }
@@ -1271,6 +1282,7 @@ binders.tryon = () => {
   $('#try-send')?.addEventListener('click', async () => {
     const text = 'היי תום, ככה דמיינתי את הקעקוע – מצרפ/ת הדמיה מהאפליקציה 🙂';
     const b = await exportBlob(); const f = b && fileOf(b);
+    if (b && await nativeShare(b, text)) return;
     if (f && canShare(f)) { try { await navigator.share({ files: [f], text }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
     if (isNative) { showErr('צלמו את המסך, ואז שלחו את הצילום לתום בוואטסאפ.'); setTimeout(() => openExternal(waLink(text)), 2500); return; }
     if (b) download(b);
