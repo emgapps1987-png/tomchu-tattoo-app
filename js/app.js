@@ -84,6 +84,15 @@ views.home = () => `
     </div>
   </div>
 
+  <a class="meet" href="#/about">
+    <img src="assets/img/tom-studio.jpg" alt="">
+    <span class="stack" style="gap:2px;flex:1">
+      <span style="font-family:Rubik,sans-serif;font-weight:700;font-size:1.1rem">היי, אני תום</span>
+      <span class="muted" style="font-size:.9rem">אמנית, אמא, ומקעקעת עם נשמה</span>
+      <span style="color:#7FE3C8;font-weight:700;font-size:.9rem">להכיר אותי</span>
+    </span>
+  </a>
+
   <div class="stack" style="gap:10px">
     <a class="btn btn-primary" href="#/contact">${icon.pen} רוצה קעקוע – בואו נדבר</a>
     <div class="grid2">
@@ -113,15 +122,6 @@ views.home = () => `
       ${['שולחים פנייה עם הרעיון שלכם', 'נפגשים לקפה ומעצבים יחד סקיצה אישית', 'ממלאים הצהרת בריאות לפני התור', 'מתקעקעים – בלי לחץ של זמן'].map((t, i) => `<li><span class="n" style="background:${FEATHER[i].c}" aria-hidden="true">${i + 1}</span>${t}</li>`).join('')}
     </ol>
   </div>
-
-  <a class="meet" href="#/about">
-    <img src="assets/img/tom-studio.jpg" alt="">
-    <span class="stack" style="gap:2px;flex:1">
-      <span style="font-family:Rubik,sans-serif;font-weight:700;font-size:1.1rem">היי, אני תום</span>
-      <span class="muted" style="font-size:.9rem">אמנית, אמא, ומקעקעת עם נשמה</span>
-      <span style="color:#7FE3C8;font-weight:700;font-size:.9rem">להכיר אותי</span>
-    </span>
-  </a>
 
   <div class="stack" style="gap:10px">
     <div class="section-head"><h2 class="barred" style="--bar:#1D93B5">מהעבודות שלי</h2><a class="link-btn" href="#/gallery">לכל העבודות</a></div>
