@@ -2,7 +2,7 @@
 // אחרי כל שינוי בקבצים כדאי להעלות את מספר הגרסה כדי שהטלפונים יקבלו את העדכון.
 // התראות (OneSignal) – אותו service worker משמש גם להתראות על מבצעים
 try { importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js'); } catch (e) { /* בלי רשת – רק מטמון */ }
-const VERSION = 'tomchu-v48';
+const VERSION = 'tomchu-v49';
 const CORE = [
   './', 'index.html', 'install.html', 'privacy.html', 'css/styles.css', 'js/app.js', 'js/boot.js', 'js/i18n.js', 'js/i18n-data.js', 'js/content.js', 'manifest.webmanifest',
   'assets/img/logo-dark.png', 'assets/img/tom-studio.jpg',
@@ -28,7 +28,8 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then((res) => { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(req, copy)); return res; })));
   } else {
     // דפים וקוד: קודם מהרשת (כדי לקבל עדכונים), ובלי רשת – מהמטמון
-    e.respondWith(fetch(req).then((res) => { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(req, copy)); return res; })
+    // cache: 'no-cache' – לא לקבל עותק ישן מהמטמון של הדפדפן (GitHub שומר קבצים עד 10 דקות), אלא לבדוק מול השרת
+    e.respondWith(fetch(req, { cache: 'no-cache' }).then((res) => { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(req, copy)); return res; })
       .catch(() => caches.match(req).then((hit) => hit || caches.match('index.html'))));
   }
 });
