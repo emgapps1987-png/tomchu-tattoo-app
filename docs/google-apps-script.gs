@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 26; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
+var SCRIPT_VERSION = 27; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -501,7 +501,8 @@ function declarationHtml_(d, when) {
   var td = 'style="border:1px solid #bbb;padding:6px 8px;vertical-align:top"';
   var rows = d.answers.map(function (a) {
     var hl = a.a === 'כן' ? ' style="border:1px solid #bbb;padding:6px 8px;background:#FDE7EF;font-weight:bold;text-align:center"' : ' ' + td.replace('"', '"text-align:center;');
-    return '<tr><td ' + td + '>' + e(a.q) + '</td><td' + hl + '>' + e(a.a) + '</td></tr>';
+    var det = a.detail ? '<div style="margin-top:4px;color:#7A1F45"><b>פירוט:</b> ' + e(String(a.detail).slice(0, 500)) + '</div>' : '';
+    return '<tr><td ' + td + '>' + e(a.q) + det + '</td><td' + hl + '>' + e(a.a) + '</td></tr>';
   }).join('');
   var consents = (d.consents || []).map(function (c) {
     return '<tr><td ' + td + '>' + e(c.text) + '</td><td ' + td + ' align="center">' + (c.ok ? '✔' : '—') + '</td></tr>';
@@ -519,7 +520,7 @@ function declarationHtml_(d, when) {
     '</table>' +
     '<h3 style="margin:16px 0 6px">שאלות בריאות</h3>' +
     '<table style="border-collapse:collapse;width:100%">' + rows + '</table>' +
-    (d.details ? '<p><b>פירוט:</b> ' + e(d.details) + '</p>' : '') +
+    (d.details ? '<p><b>פירוט:</b> ' + e(d.details).replace(/\n/g, '<br>') + '</p>' : '') +
     (d.minor && d.parent ? '<h3 style="margin:16px 0 6px">הורה / אפוטרופוס</h3><p>' + e(d.parent.name) + ' · ת״ז ' + e(d.parent.id) + ' · ' + e(d.parent.phone) + '</p>' : '') +
     '<h3 style="margin:16px 0 6px">הצהרות</h3>' +
     '<table style="border-collapse:collapse;width:100%">' + consents + '</table>' +
@@ -538,7 +539,7 @@ function flagsBox_(d, e) {
   return '<div style="margin:0 0 14px;padding:10px 14px;border-radius:6px;' + (stop ? 'background:#FDECEA;border:2px solid #D93025' : 'background:#FFF6E0;border:2px solid #E0A800') + '">' +
     '<b style="font-size:14px">' + (stop ? '⛔ לא לקעקע עד בירור' : '⚠ דורש בדיקה לפני הקעקוע') + '</b>' +
     '<ul style="margin:8px 0 0;padding-right:18px">' + items + '</ul>' +
-    (d.details ? '<p style="margin:6px 0 0"><b>פירוט הלקוח/ה:</b> ' + e(d.details) + '</p>' : '') + '</div>';
+    (d.details ? '<p style="margin:6px 0 0"><b>פירוט הלקוח/ה:</b> ' + e(d.details).replace(/\n/g, '<br>') + '</p>' : '') + '</div>';
 }
 
 function folder_() {

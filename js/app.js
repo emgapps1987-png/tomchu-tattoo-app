@@ -436,8 +436,8 @@ views.health = () => {
         <label class="pill"><input type="radio" name="${q.id}" value="לא"><span>לא</span></label>
         <label class="pill"><input type="radio" name="${q.id}" value="כן"><span>כן</span></label>
       </div>
-      <p class="q-note q-${q.level}" id="qn-${q.id}" role="status" ${state.health[q.id] === 'כן' ? '' : 'hidden'}>${esc(q.note)}</p></div>`).join('')}
-    <div class="field"><label for="h-details">פירוט (חובה אם סימנת "כן")</label><textarea id="h-details" name="details" class="fld" rows="3" aria-describedby="h-q-err"></textarea></div>
+      <p class="q-note q-${q.level}" id="qn-${q.id}" role="status" ${state.health[q.id] === 'כן' ? '' : 'hidden'}>${esc(q.note)}</p>
+      <div class="field q-detail" id="qdw-${q.id}" ${state.health[q.id] === 'כן' ? '' : 'hidden'}><label for="qd-${q.id}">פירוט${q.level === 'stop' ? ' (לא חובה)' : ''}</label><textarea id="qd-${q.id}" name="d_${q.id}" class="fld" rows="2" aria-describedby="h-q-err"></textarea></div></div>`).join('')}
     <span class="err" id="h-q-err"></span>
   </div>
 
@@ -708,7 +708,7 @@ binders.health = () => {
   f.addEventListener('change', (e) => {
     saveForm(f, d); updateMinor();
     const q = QUESTIONS.find((x) => x.id === e.target.name);
-    if (q) $(`#qn-${q.id}`).hidden = d[q.id] !== 'כן';
+    if (q) { $(`#qn-${q.id}`).hidden = d[q.id] !== 'כן'; $(`#qdw-${q.id}`).hidden = d[q.id] !== 'כן'; }
   });
   const pad = signaturePad($('#sig'), $('#sig-ph'));
   $('#sig-clear').addEventListener('click', () => pad.clear());
@@ -744,11 +744,17 @@ binders.health = () => {
       errs.push(setErr(f, 'ephone', !d.ephone?.trim() || validPhone(d.ephone) ? '' : 'מספר הטלפון לא תקין'));
     }
     if (step === 2) {
-      let firstMissing = null; let anyYes = false;
-      QUESTIONS.forEach((q) => { const ok = !!d[q.id]; $(`#fs-${q.id}`).classList.toggle('invalid', !ok); if (!ok && !firstMissing) firstMissing = f.elements[q.id][0]; if (d[q.id] === 'כן') anyYes = true; });
+      let firstMissing = null;
+      let noDetail = null;
+      QUESTIONS.forEach((q) => {
+        const ok = !!d[q.id]; const needs = d[q.id] === 'כן' && q.level !== 'stop' && !(d['d_' + q.id] || '').trim();
+        $(`#fs-${q.id}`).classList.toggle('invalid', !ok || needs);
+        if (!ok && !firstMissing) firstMissing = f.elements[q.id][0];
+        if (needs && !noDetail) noDetail = f.elements['d_' + q.id];
+      });
       let msg = '';
       if (firstMissing) msg = 'נא לענות על כל השאלות';
-      else if (anyYes && !d.details?.trim()) { msg = 'סימנת "כן" – נא לפרט בתיבה למעלה'; firstMissing = f.elements.details; }
+      else if (noDetail) { msg = 'סימנת "כן" – נא לפרט בתיבה שמתחת לשאלה'; firstMissing = noDetail; }
       $('#h-q-err').textContent = msg; errs.push(msg ? firstMissing : null);
     }
     if (step === 3) {
@@ -785,7 +791,9 @@ function finishHealth(signature) {
     tattooDate: d.tdate || '', area: d.area || '',
     address: (d.address || '').trim(), design: (d.design || '').trim(),
     emergency: d.ename || d.ephone ? { name: (d.ename || '').trim(), phone: (d.ephone || '').trim() } : null,
-    answers: QUESTIONS.map((q) => ({ id: q.id, q: q.text, a: d[q.id] })), details: d.details || '',
+    answers: QUESTIONS.map((q) => ({ id: q.id, q: q.text, a: d[q.id], detail: d[q.id] === 'כן' ? (d['d_' + q.id] || '').trim() : '' })),
+    // פירוט לכל שאלה שסומנה "כן" – מאוחד לטקסט אחד בשביל ה־PDF והמייל לתום
+    details: [...QUESTIONS.filter((q) => d[q.id] === 'כן' && (d['d_' + q.id] || '').trim()).map((q) => `• ${q.text.replace(/\?$/, '')}: ${(d['d_' + q.id] || '').trim()}`), (d.details || '').trim()].filter(Boolean).join('\n'),
     consents: CONSENTS.filter((c) => !c.minorOnly || minor).map((c) => ({ id: c.id, text: c.text, ok: !!d[c.id] })),
     minor, parent: minor ? { name: d.pname, id: d.pid, phone: d.pphone } : null,
     signature
@@ -844,8 +852,8 @@ function printHealth(r) {
       <tr><td>תאריך הקעקוע</td><td>${fmtDate(r.tattooDate)}</td><td>אזור</td><td>${esc(r.area)}</td></tr>
       ${(r.extraFields || []).map((x) => `<tr><td>${esc(x.label)}</td><td colspan="3">${esc(x.value)}</td></tr>`).join('')}</table>
     <h2>שאלות בריאות</h2>
-    <table>${r.answers.map((x) => `<tr><td>${esc(x.q)}</td><td style="width:50pt;text-align:center">${esc(x.a)}</td></tr>`).join('')}</table>
-    ${r.details ? `<p><strong>פירוט:</strong> ${esc(r.details)}</p>` : ''}
+    <table>${r.answers.map((x) => `<tr><td>${esc(x.q)}${x.detail ? `<br><strong>פירוט:</strong> ${esc(x.detail)}` : ''}</td><td style="width:50pt;text-align:center">${esc(x.a)}</td></tr>`).join('')}</table>
+    ${r.details ? `<p><strong>פירוט:</strong> ${esc(r.details).replace(/\n/g, '<br>')}</p>` : ''}
     <h2>הצהרות</h2>
     <table>${r.consents.map((c) => `<tr><td>${esc(c.text)}</td><td style="width:50pt;text-align:center">${c.ok ? '✔' : '—'}</td></tr>`).join('')}</table>
     ${r.minor ? `<h2>הורה / אפוטרופוס</h2><p>${esc(r.parent.name)} · ת״ז ${esc(r.parent.id)} · ${esc(r.parent.phone)}</p>` : ''}
