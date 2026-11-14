@@ -2,7 +2,7 @@
 // אחרי כל שינוי בקבצים כדאי להעלות את מספר הגרסה כדי שהטלפונים יקבלו את העדכון.
 // התראות (OneSignal) – אותו service worker משמש גם להתראות על מבצעים
 try { importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js'); } catch (e) { /* בלי רשת – רק מטמון */ }
-const VERSION = 'tomchu-v32';
+const VERSION = 'tomchu-v33';
 const CORE = [
   './', 'index.html', 'install.html', 'privacy.html', 'css/styles.css', 'js/app.js', 'js/boot.js', 'js/content.js', 'manifest.webmanifest',
   'assets/img/logo-dark.png', 'assets/img/tom-studio.jpg',

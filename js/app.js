@@ -537,6 +537,24 @@ function render() {
   if (rendered) { main.focus({ preventScroll: true }); announce(h1 ? h1.textContent : titles[name]); }
   rendered = true;
   binders[name]?.(param);
+  enhanceDates(main);
+}
+
+// שדות תאריך: מציגים תמיד בפורמט ישראלי (14.11.2026), בלי קשר לשפת הטלפון.
+// השדה המקורי נשאר שקוף מעל התצוגה, כך שלחיצה פותחת את בורר התאריכים של הטלפון.
+function enhanceDates(root) {
+  $$('input[type="date"]', root).forEach((inp) => {
+    if (inp.dataset.dateUi) return;
+    inp.dataset.dateUi = '1';
+    const wrap = document.createElement('span'); wrap.className = 'date-wrap';
+    const show = document.createElement('span'); show.className = 'fld date-show'; show.setAttribute('aria-hidden', 'true');
+    inp.parentNode.insertBefore(wrap, inp); wrap.appendChild(show); wrap.appendChild(inp);
+    inp.classList.add('date-native');
+    const sync = () => { const v = inp.value; show.textContent = v ? v.split('-').reverse().join('.') : 'בחירת תאריך'; show.classList.toggle('empty', !v); };
+    sync(); inp.addEventListener('input', sync); inp.addEventListener('change', sync);
+    inp._syncDate = sync;
+    inp.addEventListener('click', () => { try { inp.showPicker && inp.showPicker(); } catch (e) {} });
+  });
 }
 let rendered = false;
 
@@ -550,7 +568,7 @@ binders.care = () => {
     const date = $('#care-date'), err = $('#care-err');
     $$('[data-care-day]').forEach((b) => b.addEventListener('click', () => {
       const d = new Date(); d.setDate(d.getDate() - Number(b.dataset.careDay)); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-      date.value = d.toISOString().slice(0, 10);
+      date.value = d.toISOString().slice(0, 10); date._syncDate?.();
       $$('[data-care-day]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
     }));
     date?.addEventListener('input', () => $$('[data-care-day]').forEach((x) => x.setAttribute('aria-pressed', 'false')));
@@ -652,6 +670,7 @@ binders.health = () => {
   const d = state.health;
   restoreForm(f, d);
   if (!d.tdate) f.elements.tdate.value = todayIso();
+  f.elements.tdate._syncDate?.();
   f.addEventListener('input', () => { saveForm(f, d); updateMinor(); });
   f.addEventListener('change', (e) => {
     saveForm(f, d); updateMinor();
