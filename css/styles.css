@@ -428,3 +428,4 @@ dialog.promo-dlg::backdrop { background: rgba(6,5,8,.72); }
 [dir="ltr"] .back svg, [dir="ltr"] .flip-ltr { transform: scaleX(-1); }
 [dir="ltr"] .ltr { text-align: left; }
 [dir="ltr"] .care-card::before { left: auto; right: -30px; }
+.btn-wa { background: #25D366; color: #06240F; border-color: #25D366; font-weight: 800; }

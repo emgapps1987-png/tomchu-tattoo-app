@@ -634,7 +634,7 @@ binders.contact = () => {
   restoreForm(f, state.contact);
   f.addEventListener('input', () => saveForm(f, state.contact));
   f.addEventListener('change', () => saveForm(f, state.contact));
-  f.addEventListener('submit', (e) => {
+  f.addEventListener('submit', async (e) => {
     e.preventDefault();
     const v = state.contact; saveForm(f, v);
     const errs = [];
@@ -658,15 +658,43 @@ binders.contact = () => {
         .catch(() => alertErr(f, 'השליחה נכשלה. נסו שוב או שלחו בוואטסאפ.'));
       return;
     }
-    if (files.length && navigator.canShare && navigator.canShare({ files })) {
-      navigator.share({ text, files }).then(() => { state.contact = {}; location.hash = '#/done/contact'; }).catch(() => {});
+    if (files.length) {
+      // התמונות נשלחות לתום במייל, והוואטסאפ נפתח ישר בשיחה איתה (בלי חלון "שיתוף" של הטלפון)
+      const btn = $('button[type=submit]', f); const label = btn.textContent; btn.disabled = true; btn.textContent = 'שולח…';
+      const ref = photoRef();
+      const imgs = []; for (const file of files.slice(0, 4)) { try { imgs.push(await shrinkImage(file)); } catch (e) {} }
+      const ok = await sendPhotosToTom(imgs, { what: 'contact', ref, name: v.name.trim(), phone: v.phone.trim() });
+      btn.disabled = false; btn.textContent = label;
+      state.lastContactText = text + (ok ? `\n(שלחתי ${imgs.length > 1 ? imgs.length + ' תמונות השראה' : 'תמונת השראה'} דרך האפליקציה – מספר #${ref})` : '\n(אשלח תמונות השראה כאן בצ׳אט)');
+      openExternal(waLink(state.lastContactText));
+      state.contact = {}; location.hash = '#/done/contact';
       return;
     }
-    openExternal(waLink(files.length ? text + '\n(אשלח תמונות השראה כאן בצ׳אט)' : text));
+    openExternal(waLink(text));
     state.contact = {};
     location.hash = '#/done/contact';
   });
 };
+
+// ---- תמונות לתום: מקטינים בטלפון, שולחים לשרת (מייל לתום), ופותחים וואטסאפ ישר אליה ----
+const photoRef = () => Array.from({ length: 5 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]).join('');
+async function shrinkImage(src, max = 1280, q = 0.78) {
+  const url = typeof src === 'string' ? src : URL.createObjectURL(src);
+  try {
+    const im = new Image(); im.src = url; await im.decode();
+    const k = Math.min(1, max / Math.max(im.naturalWidth, im.naturalHeight));
+    const c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', q);
+  } finally { if (typeof src !== 'string') URL.revokeObjectURL(url); }
+}
+async function sendPhotosToTom(images, meta) {
+  if (!CONFIG.healthEndpoint || !images.length) return false;
+  let list = images.slice(0, 4);
+  // לא לעבור את מגבלת הגודל של השרת
+  while (list.reduce((n, x) => n + x.length, 0) > 1300000 && list.length > 1) list = list.slice(0, -1);
+  try { const j = await postJson(CONFIG.healthEndpoint, { kind: 'photos', images: list, ...meta }).then((r) => r.json()); return !!(j && j.ok); } catch (e) { return false; }
+}
 
 // ---- הצהרת בריאות ----
 const stepNames = ['', 'פרטים אישיים', 'שאלות בריאות', 'אישור וחתימה'];
@@ -1463,15 +1491,21 @@ binders.tryon = () => {
     else { download(b); announce('התמונה נשמרה'); }
   });
   $('#try-send')?.addEventListener('click', async () => {
-    const text = 'היי תום, ככה דמיינתי את הקעקוע – מצרפ/ת הדמיה מהאפליקציה 🙂';
-    const b = await exportBlob(); const f = b && fileOf(b);
-    if (b && await nativeShare(b, text)) return;
-    if (f && canShare(f)) { try { await navigator.share({ files: [f], text }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
-    if (isNative) { showErr('צלמו את המסך, ואז שלחו את הצילום לתום בוואטסאפ.'); setTimeout(() => openExternal(waLink(text)), 2500); return; }
-    if (b) download(b);
-    showErr('התמונה נשמרה במכשיר. עכשיו נפתח וואטסאפ – צרפו אותה להודעה.');
-    setTimeout(() => openExternal(waLink(text)), 1800);
+    const b = await exportBlob(); if (!b) return showErr('לא הצלחנו לשמור. נסו שוב.');
+    if (isNative && await nativeShare(b, 'היי תום, ככה דמיינתי את הקעקוע – מצרפ/ת הדמיה מהאפליקציה 🙂')) return;
+    // אייפון ואתר: ההדמיה נשלחת לתום במייל, והוואטסאפ נפתח ישר בשיחה איתה
+    const btn = $('#try-send'); const label = btn.textContent; btn.disabled = true; btn.textContent = 'שולח…';
+    const ref = photoRef();
+    const ok = await sendPhotosToTom([await shrinkImage(b, 1400, 0.82)], { what: 'tryon', ref });
+    btn.disabled = false; btn.textContent = label;
+    if (!ok) { download(b); showErr('התמונה נשמרה במכשיר. עכשיו נפתח וואטסאפ – צרפו אותה להודעה.'); setTimeout(() => openExternal(waLink('היי תום, ככה דמיינתי את הקעקוע 🙂')), 1800); return; }
+    const link = waLink(`היי תום, שלחתי לך הדמיה של הקעקוע מהאפליקציה – מספר #${ref} 🙂`);
+    // גיבוי לאייפון: אם הדפדפן חסם את הפתיחה האוטומטית – כפתור ללחיצה
+    let box = $('#try-sent'); if (!box) { box = document.createElement('div'); box.id = 'try-sent'; box.className = 'stack'; box.style.gap = '8px'; btn.insertAdjacentElement('afterend', box); }
+    box.innerHTML = `<p class="muted" role="status" style="margin:0">ההדמיה נשלחה לתום ✓ (מספר #${ref})</p><a class="btn btn-wa" href="${link}" target="_blank" rel="noopener">להמשיך לוואטסאפ של תום</a>`;
+    openExternal(link);
   });
+
 };
 
 // ---------------------------------------------------------------------

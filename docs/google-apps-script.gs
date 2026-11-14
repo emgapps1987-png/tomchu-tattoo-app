@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 25; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
+var SCRIPT_VERSION = 26; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -392,6 +392,27 @@ function sketchReport_(d) {
   return json_({ ok: true });
 }
 
+// תמונות מהאפליקציה (השראה לפנייה / הדמיה על הגוף) – נשלחות לתום במייל, והלקוח פותח וואטסאפ ישר אליה
+var PHOTO_RE = /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/;
+function photos_(d) {
+  var imgs = (Array.isArray(d.images) ? d.images : []).filter(function (x) { return PHOTO_RE.test(String(x)); }).slice(0, 4);
+  var ref = String(d.ref || '').replace(/[^A-Z0-9]/g, '').slice(0, 6);
+  if (!imgs.length || !ref) return json_({ ok: false, error: 'missing' });
+  var what = d.what === 'tryon' ? 'הדמיה על הגוף' : 'תמונות השראה לפנייה';
+  var name = cell_(String(d.name || '').slice(0, 60)), phone = cell_(String(d.phone || '').replace(/[^\d+\- ]/g, '').slice(0, 20));
+  var when = Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'dd/MM/yyyy HH:mm');
+  var att = imgs.map(function (x, i) { return Utilities.newBlob(Utilities.base64Decode(x.split(',')[1]), 'image/jpeg', ref + '-' + (i + 1) + '.jpg'); });
+  var esc = function (x) { return String(x).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var html = '<div dir="rtl" style="font-family:Arial,sans-serif;font-size:15px">' +
+    '<p><b>' + what + '</b> · מספר <b>#' + ref + '</b> · ' + when + '</p>' +
+    (name ? '<p>שם: ' + esc(name) + '</p>' : '') + (phone ? '<p>טלפון: ' + esc(phone) + '</p>' : '') +
+    '<p>הלקוח/ה פתח/ה וואטסאפ אלייך עם אותו מספר (#' + ref + '), כדי שתדעי לאיזו שיחה זה שייך.</p>' +
+    att.map(function (b, i) { return '<p><img src="cid:img' + i + '" style="max-width:100%;border-radius:8px"></p>'; }).join('') + '</div>';
+  var inline = {}; att.forEach(function (b, i) { inline['img' + i] = b; });
+  MailApp.sendEmail({ to: EMAIL_TO, subject: '📷 ' + what + ' #' + ref + (name ? ' – ' + name : ''), htmlBody: html, inlineImages: inline, attachments: att });
+  return json_({ ok: true });
+}
+
 function doPost(e) {
   try {
     var body = (e && e.postData && e.postData.contents) || '';
@@ -402,6 +423,7 @@ function doPost(e) {
     if (d.kind === 'sketchReport') return sketchReport_(d);
     if (d.kind === 'sketchLab') return sketchLab_(d);
     if (!rateOk_()) return json_({ ok: false, error: 'busy' });
+    if (d.kind === 'photos') return photos_(d);
     if (d.kind !== 'health') return json_({ ok: false, error: 'unknown kind' });
     if (!d.name || !d.signature || !Array.isArray(d.answers)) return json_({ ok: false, error: 'missing fields' });
     if (!SIG_RE.test(String(d.signature))) return json_({ ok: false, error: 'bad signature' });
