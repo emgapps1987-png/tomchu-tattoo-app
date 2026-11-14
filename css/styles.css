@@ -120,7 +120,7 @@ main { max-width: 560px; margin: 0 auto; padding: 16px 16px calc(96px + env(safe
 .hscroll { margin: 0 -16px; padding: 0 16px 4px; list-style: none; display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; }
 .hscroll > li { scroll-snap-align: start; }
 .thumb-btn { display: block; padding: 0; border: 0; border-radius: 14px; overflow: hidden; cursor: pointer; background: var(--surface); }
-.thumb-btn img { width: 100%; height: 100%; object-fit: cover; }
+.thumb-btn > img { width: 100%; height: 100%; object-fit: cover; }
 .art-card { width: 100%; height: 100%; text-align: start; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); padding: 14px; display: flex; flex-direction: column; gap: 6px; text-decoration: none; }
 .tag { font-size: 0.78rem; font-weight: 700; color: var(--acc); }
 .clamp2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -444,7 +444,7 @@ dialog.promo-dlg::backdrop { background: rgba(6,5,8,.72); }
 .thumb-btn { position: relative; }
 .thumb-btn > .tt-loader, .viewer-box > .tt-loader { position: absolute; inset: 0; margin: auto; display: none; z-index: 1; }
 .thumb-btn.is-loading > .tt-loader, .viewer-box.is-loading > .tt-loader { display: inline-flex; }
-.thumb-btn.is-loading img { opacity: 0; }
-.thumb-btn img { transition: opacity .3s; }
-.viewer-box { position: relative; min-height: 120px; display: flex; align-items: center; justify-content: center; }
-.viewer-box.is-loading img { opacity: 0; }
+.thumb-btn.is-loading > img { opacity: 0; }
+.thumb-btn > img { transition: opacity .3s; }
+.viewer-box { position: relative; flex: 1; min-height: 120px; display: flex; align-items: center; justify-content: center; }
+.viewer-box.is-loading > img { opacity: 0; }
