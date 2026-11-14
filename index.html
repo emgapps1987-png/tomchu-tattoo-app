@@ -73,11 +73,16 @@
 <dialog id="viewer" aria-labelledby="viewer-cap">
   <div class="viewer-top">
     <span id="viewer-tag"></span>
+    <span id="viewer-count" class="viewer-count" dir="ltr" aria-live="polite"></span>
     <button type="button" class="icon-btn on-dark" id="viewer-close" aria-label="סגירה">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
   </div>
-  <div class="viewer-box"><img id="viewer-img" src="" alt=""></div>
+  <div class="viewer-box" id="viewer-box"><img id="viewer-img" src="" alt="" draggable="false">
+    <button type="button" class="v-nav v-prev" id="viewer-prev" aria-label="התמונה הקודמת"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+    <button type="button" class="v-nav v-next" id="viewer-next" aria-label="התמונה הבאה"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+  </div>
+  <p class="viewer-hint" id="viewer-hint">החליקו לתמונה הבאה · צביטה או הקשה כפולה לזום</p>
   <p id="viewer-cap"></p>
   <a class="btn btn-primary" id="viewer-cta" href="#/contact">רוצה משהו בסגנון הזה</a>
 </dialog>

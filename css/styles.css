@@ -457,3 +457,19 @@ dialog.promo-dlg::backdrop { background: rgba(6,5,8,.72); }
 .g-out { animation: tt-blur-out .2s ease-in both; pointer-events: none; }
 .thumb-btn:not(.is-loading) > img, .viewer-box:not(.is-loading) > img { animation: tt-sharpen .45s ease-out both; }
 @media (prefers-reduced-motion: reduce) { .g-in, .g-out, .thumb-btn > img, .viewer-box > img { animation: none !important; } }
+
+/* צפייה בעבודות: חצים, מונה, זום */
+.viewer-box { overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+#viewer-img { will-change: transform; -webkit-user-drag: none; }
+.viewer-box.zoomed { cursor: grab; }
+.viewer-count { font-size: .85rem; color: #E9E2EC; font-variant-numeric: tabular-nums; margin-inline-start: auto; margin-inline-end: 10px; }
+.v-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 2; width: 48px; height: 48px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); background: rgba(12,10,14,.55); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(4px); }
+.v-nav svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.v-nav:focus-visible { outline: 3px solid #D97AD6; outline-offset: 2px; }
+.v-prev { inset-inline-start: 10px; }
+.v-next { inset-inline-end: 10px; }
+[dir="ltr"] .v-nav svg { transform: scaleX(-1); }
+.viewer-box.zoomed .v-nav { opacity: 0; pointer-events: none; }
+.viewer-hint { margin: 6px 16px 0; text-align: center; font-size: .78rem; color: #B3A8B6; }
+@media (hover: hover) and (pointer: fine) { .viewer-hint { display: none; } }
+@media (hover: none) { .v-nav { width: 40px; height: 40px; opacity: .8; } }

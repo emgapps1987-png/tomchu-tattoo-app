@@ -984,20 +984,102 @@ function signaturePad(canvas, placeholder) {
 // ---------------------------------------------------------------------
 // צפייה בתמונה
 // ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+// צפייה בעבודות: מעבר בין התמונות (חצים / החלקה / מקלדת) וזום (צביטה / הקשה כפולה)
+// ---------------------------------------------------------------------
 const viewer = $('#viewer');
+const V = { list: [], i: 0, s: 1, x: 0, y: 0 };
+const vImg = $('#viewer-img'), vBox = $('#viewer-box');
+const isRtl = () => document.documentElement.dir !== 'ltr';
+const vApply = (anim) => { vImg.style.transition = anim ? 'transform .25s ease' : 'none'; vImg.style.transform = `translate(${V.x}px, ${V.y}px) scale(${V.s})`; vBox.classList.toggle('zoomed', V.s > 1.01); };
+const vReset = (anim) => { V.s = 1; V.x = 0; V.y = 0; vApply(anim); };
+function vClamp() {
+  const r = vBox.getBoundingClientRect(); const mx = (r.width * (V.s - 1)) / 2, my = (r.height * (V.s - 1)) / 2;
+  V.x = Math.max(-mx, Math.min(mx, V.x)); V.y = Math.max(-my, Math.min(my, V.y));
+}
+function vShow(i, dir = 0) {
+  const n = V.list.length; if (!n) return;
+  V.i = (i + n) % n; const w = V.list[V.i];
+  vReset(false);
+  vBox.classList.add('is-loading');
+  if (!$('.tt-loader', vBox)) vBox.insertAdjacentHTML('afterbegin', spinner(56));
+  vImg.onload = vImg.onerror = () => vBox.classList.remove('is-loading');
+  vImg.src = w.src; vImg.alt = w.alt; if (vImg.complete && vImg.naturalWidth) vBox.classList.remove('is-loading');
+  if (dir) vImg.animate([{ transform: `translateX(${dir * 60}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  $('#viewer-cap').textContent = w.alt; $('#viewer-tag').textContent = TAGS[w.tag];
+  $('#viewer-count').textContent = n > 1 ? `${V.i + 1} / ${n}` : '';
+  $('#viewer-prev').hidden = $('#viewer-next').hidden = n < 2;
+  [V.list[(V.i + 1) % n], V.list[(V.i - 1 + n) % n]].forEach((x) => { const im = new Image(); im.src = x.src; }); // טעינה מוקדמת של השכנות
+}
+// "הבאה": בעברית ובערבית הבאה נמצאת משמאל
+const vNext = () => vShow(V.i + 1, isRtl() ? 1 : -1);
+const vPrev = () => vShow(V.i - 1, isRtl() ? -1 : 1);
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-photo]'); if (!b) return;
-  const w = WORKS.find((x) => x.id === b.dataset.photo); if (!w) return;
-  const vi = $('#viewer-img'); const box = vi.parentElement; box.classList.add('is-loading');
-  if (!$('.tt-loader', box)) box.insertAdjacentHTML('afterbegin', spinner(56));
-  vi.onload = vi.onerror = () => box.classList.remove('is-loading');
-  vi.src = w.src; vi.alt = w.alt; if (vi.complete && vi.naturalWidth) box.classList.remove('is-loading');
-  $('#viewer-cap').textContent = w.alt; $('#viewer-tag').textContent = TAGS[w.tag];
-  viewer.showModal();
+  // רשימת התמונות = מה שמוצג כרגע (לפי הסינון בגלריה), אחרת כל העבודות
+  const ids = [...document.querySelectorAll('#main [data-photo]')].map((x) => x.dataset.photo);
+  V.list = (b.closest('#gallery') ? ids : WORKS.map((w) => w.id)).map((id) => WORKS.find((w) => w.id === id)).filter(Boolean);
+  const i = V.list.findIndex((w) => w.id === b.dataset.photo);
+  viewer.showModal(); vShow(i < 0 ? 0 : i);
 });
+$('#viewer-next').addEventListener('click', vNext);
+$('#viewer-prev').addEventListener('click', vPrev);
+viewer.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') { e.preventDefault(); isRtl() ? vNext() : vPrev(); }
+  if (e.key === 'ArrowRight') { e.preventDefault(); isRtl() ? vPrev() : vNext(); }
+});
+viewer.addEventListener('close', () => vReset(false));
 $('#viewer-close').addEventListener('click', () => viewer.close());
 $('#viewer-cta').addEventListener('click', () => viewer.close());
 viewer.addEventListener('click', (e) => { if (e.target === viewer) viewer.close(); });
+
+// מגע: אצבע אחת – החלקה בין תמונות (או הזזה כשיש זום), שתי אצבעות – זום, הקשה כפולה – זום פנימה/החוצה
+(function viewerGestures() {
+  const pts = new Map(); let start = null, pinch = null, lastTap = 0, moved = false;
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  vBox.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('.v-nav')) return;
+    vBox.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 1) { start = { x: e.clientX, y: e.clientY, tx: V.x, ty: V.y }; moved = false; }
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: dist(a, b), s: V.s, cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, tx: V.x, ty: V.y }; start = null; }
+  });
+  vBox.addEventListener('pointermove', (e) => {
+    if (!pts.has(e.pointerId)) return; pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && pts.size >= 2) {
+      const [a, b] = [...pts.values()]; const r = vBox.getBoundingClientRect();
+      const s = Math.max(1, Math.min(4, pinch.s * dist(a, b) / pinch.d));
+      const ox = pinch.cx - (r.left + r.width / 2), oy = pinch.cy - (r.top + r.height / 2);
+      V.x = pinch.tx + ox * (1 - s / pinch.s) + ((a.x + b.x) / 2 - pinch.cx); V.y = pinch.ty + oy * (1 - s / pinch.s) + ((a.y + b.y) / 2 - pinch.cy);
+      V.s = s; vClamp(); vApply(false); moved = true; return;
+    }
+    if (!start) return;
+    const dx = e.clientX - start.x, dy = e.clientY - start.y;
+    if (Math.abs(dx) + Math.abs(dy) > 6) moved = true;
+    if (V.s > 1.01) { V.x = start.tx + dx; V.y = start.ty + dy; vClamp(); vApply(false); }
+    else if (V.list.length > 1) { vImg.style.transition = 'none'; vImg.style.transform = `translateX(${dx}px)`; vImg.style.opacity = String(1 - Math.min(Math.abs(dx) / 600, .4)); }
+  });
+  const end = (e) => {
+    if (!pts.has(e.pointerId)) return; pts.delete(e.pointerId);
+    if (pinch) { if (pts.size < 2) { pinch = null; if (V.s < 1.05) vReset(true); const p = [...pts.values()][0]; start = p ? { x: p.x, y: p.y, tx: V.x, ty: V.y } : null; } return; }
+    if (!start) return;
+    const dx = e.clientX - start.x; const s0 = start; start = null; vImg.style.opacity = '';
+    if (V.s <= 1.01 && V.list.length > 1) {
+      if (Math.abs(dx) > 60) { (dx > 0) === isRtl() ? vNext() : vPrev(); return; }
+      vApply(true);
+    }
+    if (!moved) { // הקשה כפולה = זום
+      const now = Date.now();
+      if (now - lastTap < 300) {
+        lastTap = 0;
+        if (V.s > 1.01) vReset(true);
+        else { const r = vBox.getBoundingClientRect(); V.s = 2.5; V.x = -(s0.x - (r.left + r.width / 2)) * 1.5; V.y = -(s0.y - (r.top + r.height / 2)) * 1.5; vClamp(); vApply(true); }
+      } else lastTap = now;
+    }
+  };
+  vBox.addEventListener('pointerup', end); vBox.addEventListener('pointercancel', end);
+  // במחשב: גלגלת עם Ctrl / משטח מגע = זום
+  vBox.addEventListener('wheel', (e) => { if (!e.ctrlKey) return; e.preventDefault(); V.s = Math.max(1, Math.min(4, V.s * (e.deltaY < 0 ? 1.12 : 0.89))); if (V.s <= 1.01) vReset(true); else { vClamp(); vApply(false); } }, { passive: false });
+})();
 
 // ---------------------------------------------------------------------
 // גודל טקסט (האפליקציה תמיד במצב כהה)
