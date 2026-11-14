@@ -1,4 +1,5 @@
 import { CONFIG, TAGS, WORKS, FAQ, CARE, QUESTIONS, CONSENTS, ARTICLES } from './content.js';
+import { LANG, LANGS, langInfo, tr, word, startI18n, setLang } from './i18n.js';
 
 // ---------------------------------------------------------------------
 // עזרים
@@ -48,7 +49,7 @@ const FEATHER = [
 ];
 const icon = {
   back: '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',
-  fwd: '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>',
+  fwd: '<svg class="flip-ltr" aria-hidden="true" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>',
   chev: '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>',
   pen: '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 20l1.5-4.5L16 5a2.1 2.1 0 013 3L8.5 18.5z"/></svg>',
   heart: '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 21s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 11c0 5.6-7 10-7 10z"/><path d="M9.5 12h5M12 9.5v5"/></svg>',
@@ -241,12 +242,12 @@ async function careSchedule(j) {
       if (at.getTime() > now + 60000) list.push({ id, title, body, schedule: { at, allowWhileIdle: true } });
     };
     for (let i = 0; i <= 14; i++) {
-      add(7000 + i * 3, i, 9, 'בוקר טוב! זמן לשטיפה 🫧', `יום ${i + 1} – מים פושרים, ייבוש בטפיחות ושכבה דקה של משחה.`);
-      add(7001 + i * 3, i, 14, 'שטיפה של הצהריים 🫧', `יום ${i + 1} – שכבה דקה של משחה, וזהו.`);
-      add(7002 + i * 3, i, 20, 'זמן לשטיפה של הערב 🫧', `יום ${i + 1} – מים פושרים, ייבוש בטפיחות ומשחה. ולא לגרד 😉`);
+      add(7000 + i * 3, i, 9, tr('בוקר טוב! זמן לשטיפה 🫧'), `${tr('יום')} ${i + 1} – ${tr('– מים פושרים, ייבוש בטפיחות ושכבה דקה של משחה.').replace(/^– /, '')}`);
+      add(7001 + i * 3, i, 14, tr('שטיפה של הצהריים 🫧'), `${tr('יום')} ${i + 1} – ${tr('– שכבה דקה של משחה, וזהו.').replace(/^– /, '')}`);
+      add(7002 + i * 3, i, 20, tr('זמן לשטיפה של הערב 🫧'), `${tr('יום')} ${i + 1} – ${tr('– מים פושרים, ייבוש בטפיחות ומשחה. ולא לגרד 😉').replace(/^– /, '')}`);
     }
-    add(7100, 15, 10, 'שבועיים! הקילופים מאחורייך ✨', 'מהיום אפשר לעבור לקרם לחות. עוד שבועיים בלי שמש ובריכה.');
-    add(7101, 30, 10, 'הקעקוע החלים! 🏅', '30 יום של שמירה – כל הכבוד. מעכשיו רק קרם הגנה בשמש.');
+    add(7100, 15, 10, tr('שבועיים! הקילופים מאחורייך ✨'), tr('מהיום אפשר לעבור לקרם לחות. עוד שבועיים בלי שמש ובריכה.'));
+    add(7101, 30, 10, tr('הקעקוע החלים! 🏅'), tr('30 יום של שמירה – כל הכבוד. מעכשיו רק קרם הגנה בשמש.'));
     if (list.length) await P.schedule({ notifications: list });
     return true;
   } catch (e) { return false; }
@@ -383,10 +384,10 @@ views.contact = () => `
   <div class="grid2">
     <div class="field"><label for="c-place">מיקום בגוף</label><input id="c-place" name="place" class="fld" type="text" placeholder="למשל: אמה"></div>
     <div class="field"><label for="c-size">גודל משוער</label>
-      <select id="c-size" name="size" class="fld"><option>קטן (עד 5 ס״מ)</option><option>בינוני (5–15 ס״מ)</option><option>גדול (15+ ס״מ)</option><option selected>עוד לא יודע/ת</option></select></div>
+      <select id="c-size" name="size" class="fld">${['קטן (עד 5 ס״מ)', 'בינוני (5–15 ס״מ)', 'גדול (15+ ס״מ)', 'עוד לא יודע/ת'].map((o, i) => `<option value="${o}"${i === 3 ? ' selected' : ''}>${o}</option>`).join('')}</select></div>
   </div>
   <div class="field"><label for="c-when">מתי נוח לכם?</label>
-    <select id="c-when" name="when" class="fld"><option>גמיש/ה</option><option>בוקר</option><option>צהריים</option><option>ערב</option></select></div>
+    <select id="c-when" name="when" class="fld">${['גמיש/ה', 'בוקר', 'צהריים', 'ערב'].map((o) => `<option value="${o}">${o}</option>`).join('')}</select></div>
   <div class="field"><label for="c-file">תמונות השראה (לא חובה)</label>
     <input id="c-file" name="files" class="fld" type="file" accept="image/*" multiple aria-describedby="c-file-hint">
     <span class="hint" id="c-file-hint">בטלפון התמונות יצורפו להודעה. אם לא – אפשר לשלוח אותן בהמשך השיחה בוואטסאפ.</span></div>
@@ -530,11 +531,15 @@ function render() {
   if (name === 'done' && param === 'health' && !state.lastHealth) { location.replace('#/health'); return; }
   const main = $('#main');
   main.innerHTML = views[name](param);
+  // הצהרת הבריאות והמאמרים – בעברית בלבד (מסמך משפטי / תוכן ארוך)
+  const heOnly = LANG !== 'he' && (name === 'health' || name === 'articles' || name === 'article' || (name === 'done' && param === 'health'));
+  if (heOnly) { const scr = main.firstElementChild; scr.setAttribute('data-i18n-skip', ''); scr.setAttribute('lang', 'he'); scr.setAttribute('dir', 'rtl');
+    scr.insertAdjacentHTML('afterbegin', `<p class="lang-note" lang="${LANG}" dir="${langInfo.dir}">${word(name === 'health' || name === 'done' ? 'healthOnly' : 'articlesOnly')}</p>`); }
   $$('.tabbar a').forEach((a) => { if (a.dataset.tab === tabOf(name, param)) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   const h1 = $('h1', main);
-  document.title = `${titles[name]} · Tomchu Tattoo`;
+  document.title = `${tr(titles[name])} · Tomchu Tattoo`;
   window.scrollTo(0, 0);
-  if (rendered) { main.focus({ preventScroll: true }); announce(h1 ? h1.textContent : titles[name]); }
+  if (rendered) { main.focus({ preventScroll: true }); announce(h1 ? h1.textContent : tr(titles[name])); }
   rendered = true;
   binders[name]?.(param);
   enhanceDates(main);
@@ -1047,23 +1052,24 @@ async function translateIdea(he) {
   HE_TERMS.forEach(([re, en]) => { re.lastIndex = 0; if (re.test(rest)) { (BODY.has(en.split(' ').pop()) ? body : mods).push(en); re.lastIndex = 0; rest = rest.replace(re, ' '); } re.lastIndex = 0; });
   rest = rest.replace(/קעקוע\S*/g, ' ').replace(/\s+/g, ' ').trim();
   let en = '';
-  if (rest && /[֐-׿]/.test(rest) && CONFIG.healthEndpoint) {
+  const src = /[\u0590-\u05FF]/.test(rest) ? 'he' : /[\u0600-\u06FF]/.test(rest) ? 'ar' : /[\u0400-\u04FF]/.test(rest) ? 'ru' : 'en';
+  if (rest && src !== 'en' && CONFIG.healthEndpoint) {
     try {
       const ctl = 'AbortController' in window ? new AbortController() : null;
       const tm = setTimeout(() => ctl && ctl.abort(), 7000);
-      const j = await fetch(`${CONFIG.healthEndpoint}?action=translate&q=${encodeURIComponent(rest)}`, { signal: ctl ? ctl.signal : undefined }).then((r) => r.json());
+      const j = await fetch(`${CONFIG.healthEndpoint}?action=translate&from=${src === 'he' ? 'iw' : src}&q=${encodeURIComponent(rest)}`, { signal: ctl ? ctl.signal : undefined }).then((r) => r.json());
       clearTimeout(tm);
       en = (j && j.ok && j.text) || '';
     } catch (e) { en = ''; }
     if (!en) {
       // גיבוי: שירות תרגום חינמי (MyMemory)
       try {
-        const j = await fetch(`https://api.mymemory.translated.net/get?langpair=he|en&q=${encodeURIComponent(rest)}`).then((r) => r.json());
+        const j = await fetch(`https://api.mymemory.translated.net/get?langpair=${src}|en&q=${encodeURIComponent(rest)}`).then((r) => r.json());
         const tx = j && j.responseStatus === 200 && j.responseData && j.responseData.translatedText;
-        if (tx && !/[\u0590-\u05FF]/.test(tx) && !/MYMEMORY WARNING/i.test(tx)) en = tx;
+        if (tx && !/[\u0590-\u05FF\u0600-\u06FF\u0400-\u04FF]/.test(tx) && !/MYMEMORY WARNING/i.test(tx)) en = tx;
       } catch (e) { /* בלי תרגום – נחפש בעברית */ }
     }
-  } else if (!/[֐-׿]/.test(rest)) en = rest;
+  } else if (src === 'en') en = rest;
   if (!en && rest) return null; // אין תרגום – נחפש בעברית
   const words = cleanQuery(en);
   return { nouns: words.filter((w) => !ADJ.has(w) && !BODY.has(w)), mods: [...mods, ...words.filter((w) => ADJ.has(w))], body: [...body, ...words.filter((w) => BODY.has(w))] };
@@ -1124,7 +1130,7 @@ binders.ideas = () => {
   const ta = $('#idea-text');
   $$('[data-start]').forEach((b) => b.addEventListener('click', () => {
     const x = IDEA_STARTS[Number(b.dataset.start)];
-    ideaState.text = x.he; ta.value = x.he; ideaState.parts = { nouns: cleanQuery(x.en), mods: [], body: [] }; ideaState.style = '';
+    ideaState.text = tr(x.he); ta.value = tr(x.he); ideaState.parts = { nouns: cleanQuery(x.en), mods: [], body: [] }; ideaState.style = '';
     renderIdeaOut(buildQueries(ideaState.parts, ''));
     $('#idea-out').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }));
@@ -1654,6 +1660,28 @@ $('#bell-btn')?.addEventListener('click', () => { if (push.os) openPushDialog();
 document.addEventListener('visibilitychange', () => { if (!document.hidden) syncBell(); });
 pushReady().then(syncBell);
 
+// ---------------------------------------------------------------------
+// בחירת שפה
+// ---------------------------------------------------------------------
+$('#lang-code').textContent = langInfo.short;
+$('#lang-btn').addEventListener('click', () => {
+  if ($('#lang-dlg')) return;
+  const dlg = document.createElement('dialog');
+  dlg.id = 'lang-dlg'; dlg.className = 'promo-dlg lang-dlg'; dlg.setAttribute('aria-label', 'שפה · Language · Язык · اللغة'); dlg.setAttribute('data-i18n-skip', '');
+  dlg.innerHTML = `<div class="promo-body"><h2 tabindex="-1" id="lang-t"><span lang="he">שפה</span> · <span lang="en">Language</span> · <span lang="ru">Язык</span> · <span lang="ar">اللغة</span></h2>
+    <div class="lang-list">${LANGS.map((l) => `<button type="button" class="lang-opt" data-lang="${l.id}" lang="${l.id}" dir="${l.dir}" aria-pressed="${l.id === LANG}">${l.label}</button>`).join('')}</div>
+    <button type="button" class="btn btn-ghost" id="lang-x" lang="${LANG}">${LANG === 'he' ? 'סגירה' : tr('סגירה')}</button></div>`;
+  document.body.appendChild(dlg);
+  const close = () => { dlg.close(); dlg.remove(); $('#lang-btn').focus(); };
+  $('#lang-x', dlg).addEventListener('click', close);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); close(); });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) close(); });
+  $$('.lang-opt', dlg).forEach((b) => b.addEventListener('click', () => { if (b.dataset.lang === LANG) close(); else setLang(b.dataset.lang); }));
+  if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+  $('#lang-t', dlg).focus();
+});
+
+startI18n();
 syncTop();
 playIntro();
 loadPromo();
