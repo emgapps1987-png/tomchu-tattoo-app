@@ -473,3 +473,10 @@ dialog.promo-dlg::backdrop { background: rgba(6,5,8,.72); }
 .viewer-hint { margin: 6px 16px 0; text-align: center; font-size: .78rem; color: #B3A8B6; }
 @media (hover: hover) and (pointer: fine) { .viewer-hint { display: none; } }
 @media (hover: none) { .v-nav { width: 40px; height: 40px; opacity: .8; } }
+
+/* כפתורי רשתות חברתיות בצבעי המותגים */
+.soc { color: #fff; border: 0; font-weight: 800; }
+.soc-ig { background: linear-gradient(45deg, #F58529 0%, #DD2A7B 45%, #8134AF 75%, #515BD4 100%); }
+.soc-fb { background: #1877F2; }
+.soc-tt { background: #010101; box-shadow: -2px -2px 0 #25F4EE, 2px 2px 0 #FE2C55; }
+.soc:hover, .soc:focus-visible { filter: brightness(1.1); }

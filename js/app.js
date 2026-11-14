@@ -200,9 +200,9 @@ views.about = () => `
     <a class="btn btn-primary" href="#/contact">בואו נדבר על הקעקוע שלך</a>
   </div>
   <div class="socials">
-    <a class="btn btn-small btn-outline" href="${CONFIG.instagram}" target="_blank" rel="noopener">Instagram</a>
-    <a class="btn btn-small btn-outline" href="${CONFIG.facebook}" target="_blank" rel="noopener">Facebook</a>
-    <a class="btn btn-small btn-outline" href="${CONFIG.tiktok}" target="_blank" rel="noopener">TikTok</a>
+    <a class="btn btn-small soc soc-ig" href="${CONFIG.instagram}" target="_blank" rel="noopener">Instagram</a>
+    <a class="btn btn-small soc soc-fb" href="${CONFIG.facebook}" target="_blank" rel="noopener">Facebook</a>
+    <a class="btn btn-small soc soc-tt" href="${CONFIG.tiktok}" target="_blank" rel="noopener">TikTok</a>
   </div>
   <p style="text-align:center"><a href="#/accessibility">הצהרת נגישות</a> · <a href="privacy.html">מדיניות פרטיות</a></p>
 </section>`;
