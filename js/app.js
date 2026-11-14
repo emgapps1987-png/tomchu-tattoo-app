@@ -1779,6 +1779,28 @@ $('#lang-btn').addEventListener('click', () => {
   $('#lang-t', dlg).focus();
 });
 
+// ---------------------------------------------------------------------
+// כפתור "חזרה" של אנדרואיד: סוגר חלון פתוח, חוזר שלב/מסך אחד אחורה, ורק במסך הבית יוצא
+// ---------------------------------------------------------------------
+(function androidBack() {
+  if (!isNative) return;
+  const hook = () => {
+    const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App; if (!App) return false;
+    App.addListener('backButton', ({ canGoBack }) => {
+      if ($('#tt-busy')) return; // באמצע שליחה – לא עושים כלום
+      const dlg = [...document.querySelectorAll('dialog[open]')].pop();
+      // כמו מקש Esc: כל חלון כבר יודע לסגור את עצמו באירוע cancel
+      if (dlg) { const ev = new Event('cancel', { cancelable: true }); dlg.dispatchEvent(ev); if (!ev.defaultPrevented) dlg.close(); return; }
+      const prev = $('#h-prev'); if (prev && !prev.hidden) { prev.click(); return; }
+      const route = (location.hash.replace(/^#\/?/, '').split('/')[0]) || 'home';
+      if (route !== 'home') { if (canGoBack) history.back(); else location.hash = '#/home'; return; }
+      App.minimizeApp ? App.minimizeApp() : App.exitApp();
+    });
+    return true;
+  };
+  if (!hook()) document.addEventListener('deviceready', hook, { once: true });
+})();
+
 startI18n();
 syncTop();
 playIntro();
