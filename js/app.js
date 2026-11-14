@@ -13,6 +13,22 @@ const store = {
 };
 // באפליקציית אנדרואיד (Capacitor) קישורים חיצוניים נפתחים באפליקציה המתאימה (וואטסאפ, Waze, דפדפן)
 const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+// לוגו מסתובב כסימן טעינה
+const spinner = (size = 22) => `<span class="tt-loader" style="--s:${size}px" aria-hidden="true"><img src="assets/img/logo-dark.png" alt=""></span>`;
+// כפתור במצב "עובד": לוגו מסתובב + טקסט. מחזיר פונקציה שמחזירה את הכפתור למצבו
+function busy(btn, text) {
+  if (!btn) return () => {};
+  const html = btn.innerHTML; btn.disabled = true; btn.setAttribute('aria-busy', 'true');
+  btn.innerHTML = `${spinner(22)}<span>${text}</span>`;
+  return () => { btn.disabled = false; btn.removeAttribute('aria-busy'); btn.innerHTML = html; };
+}
+// מסך המתנה מלא (לפעולות ארוכות כמו שליחת הצהרה)
+function busyScreen(text) {
+  let o = $('#tt-busy');
+  if (!o) { o = document.createElement('div'); o.id = 'tt-busy'; o.setAttribute('role', 'status'); o.setAttribute('aria-live', 'polite'); document.body.appendChild(o); }
+  o.innerHTML = `${spinner(96)}<p>${text}</p>`;
+  return () => o.remove();
+}
 const openExternal = (url) => { if (isNative) location.href = url; else window.open(url, '_blank', 'noopener'); };
 if (isNative) {
   document.addEventListener('click', (e) => {
@@ -205,7 +221,7 @@ views.gallery = () => {
 };
 function galleryItems() {
   const list = state.galf === 'all' ? WORKS : WORKS.filter((w) => w.tag === state.galf);
-  return list.map((w) => `<li><button type="button" class="thumb-btn" data-photo="${w.id}" aria-label="${esc(w.alt)} – להגדלה"><img src="${w.src}" alt="" loading="lazy"><span class="badge">${TAGS[w.tag]}</span></button></li>`).join('');
+  return list.map((w) => `<li><button type="button" class="thumb-btn is-loading" data-photo="${w.id}" aria-label="${esc(w.alt)} – להגדלה">${spinner(40)}<img src="${w.src}" alt="" loading="lazy"><span class="badge">${TAGS[w.tag]}</span></button></li>`).join('');
 }
 
 // ---------------------------------------------------------------------
@@ -614,16 +630,24 @@ binders.gallery = () => {
   $$('[data-filter]').forEach((b) => b.addEventListener('click', () => {
     state.galf = b.dataset.filter;
     $$('[data-filter]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.filter === state.galf)));
-    $('#gallery').innerHTML = galleryItems();
+    $('#gallery').innerHTML = galleryItems(); watchThumbs();
     announce(`מוצגות ${$$('#gallery li').length} עבודות`);
   }));
+  watchThumbs();
 };
+// מורידים את הלוגו המסתובב כשהתמונה נטענה
+function watchThumbs() {
+  $$('.thumb-btn.is-loading > img').forEach((im) => {
+    const done = () => im.closest('.thumb-btn')?.classList.remove('is-loading');
+    if (im.complete && im.naturalWidth) done(); else { im.addEventListener('load', done, { once: true }); im.addEventListener('error', done, { once: true }); }
+  });
+}
 
 binders.done = (kind) => {
   $('#print-health')?.addEventListener('click', () => printHealth(state.lastHealth));
   $('#retry-health')?.addEventListener('click', (e) => {
-    e.target.disabled = true; e.target.textContent = 'שולח…';
-    sendHealth(state.lastHealth).then(render);
+    busy(e.target, 'שולח…'); const off = busyScreen('שולחים את ההצהרה לתום…');
+    sendHealth(state.lastHealth).then(() => { off(); render(); });
   });
   setTimeout(maybeAskPush, 1500);
 };
@@ -660,11 +684,11 @@ binders.contact = () => {
     }
     if (files.length) {
       // התמונות נשלחות לתום במייל, והוואטסאפ נפתח ישר בשיחה איתה (בלי חלון "שיתוף" של הטלפון)
-      const btn = $('button[type=submit]', f); const label = btn.textContent; btn.disabled = true; btn.textContent = 'שולח…';
+      const btn = $('button[type=submit]', f); const undo = busy(btn, 'שולח…'); const off = busyScreen('שולחים את התמונות לתום…');
       const ref = photoRef();
       const imgs = []; for (const file of files.slice(0, 4)) { try { imgs.push(await shrinkImage(file)); } catch (e) {} }
       const ok = await sendPhotosToTom(imgs, { what: 'contact', ref, name: v.name.trim(), phone: v.phone.trim() });
-      btn.disabled = false; btn.textContent = label;
+      undo(); off();
       state.lastContactText = text + (ok ? `\n(שלחתי ${imgs.length > 1 ? imgs.length + ' תמונות השראה' : 'תמונת השראה'} דרך האפליקציה – מספר #${ref})` : '\n(אשלח תמונות השראה כאן בצ׳אט)');
       openExternal(waLink(state.lastContactText));
       state.contact = {}; location.hash = '#/done/contact';
@@ -812,8 +836,8 @@ function finishHealth(signature) {
   state.healthSent = false; state.healthFailed = false;
   const after = () => { state.health = { step: 1 }; state.sigData = null; location.hash = '#/done/health'; };
   if (CONFIG.healthEndpoint) {
-    const btn = $('#h-next'); btn.disabled = true; btn.textContent = 'שולח…';
-    sendHealth(rec).then(after);
+    busy($('#h-next'), 'שולח…'); const off = busyScreen('שולחים את ההצהרה לתום…');
+    sendHealth(rec).then(() => { off(); after(); });
   } else after();
 }
 
@@ -935,7 +959,10 @@ const viewer = $('#viewer');
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-photo]'); if (!b) return;
   const w = WORKS.find((x) => x.id === b.dataset.photo); if (!w) return;
-  $('#viewer-img').src = w.src; $('#viewer-img').alt = w.alt;
+  const vi = $('#viewer-img'); const box = vi.parentElement; box.classList.add('is-loading');
+  if (!$('.tt-loader', box)) box.insertAdjacentHTML('afterbegin', spinner(56));
+  vi.onload = vi.onerror = () => box.classList.remove('is-loading');
+  vi.src = w.src; vi.alt = w.alt; if (vi.complete && vi.naturalWidth) box.classList.remove('is-loading');
   $('#viewer-cap').textContent = w.alt; $('#viewer-tag').textContent = TAGS[w.tag];
   viewer.showModal();
 });
@@ -1174,9 +1201,9 @@ binders.ideas = () => {
     e.preventDefault();
     const he = ta.value.trim(); ideaState.text = he;
     if (!he) { ta.focus(); announce('כתבו רעיון קצר'); return; }
-    const btn = $('#idea-go'); btn.disabled = true; btn.textContent = 'מתרגם…';
+    const undo = busy($('#idea-go'), 'מתרגם…');
     const parts = await translateIdea(he);
-    btn.disabled = false; btn.textContent = 'מצאו לי רעיונות';
+    undo();
     if (!parts || !(parts.nouns.length + parts.mods.length + parts.body.length)) { renderIdeaOut(null, he); return; }
     ideaState.parts = parts;
     renderIdeaOut(buildQueries(parts, ideaState.style));
@@ -1419,12 +1446,14 @@ binders.tryon = () => {
   const showErr = (m) => { err.textContent = m; err.hidden = !m; if (m) announce(m); };
   const refresh = () => { tryState.jump = true; render(); };
   $('#try-body').addEventListener('change', async (e) => {
+    const off = busyScreen('מכינים את התמונה…');
     try { tryState.body = toCanvas(await loadImageFile(e.target.files[0]), 1600); showErr(''); refresh(); }
-    catch (x) { showErr('לא הצלחנו לפתוח את התמונה. נסו תמונה אחרת.'); }
+    catch (x) { showErr('לא הצלחנו לפתוח את התמונה. נסו תמונה אחרת.'); } finally { off(); }
   });
   $('#try-art').addEventListener('change', async (e) => {
+    const off = busyScreen('מכינים את התמונה…');
     try { tryState.src = toCanvas(await loadImageFile(e.target.files[0]), 900); makeInk(); showErr(''); refresh(); }
-    catch (x) { showErr('לא הצלחנו לפתוח את הסקיצה. נסו תמונה אחרת.'); }
+    catch (x) { showErr('לא הצלחנו לפתוח את הסקיצה. נסו תמונה אחרת.'); } finally { off(); }
   });
   if (!tryState.body) return;
   fit();
@@ -1502,10 +1531,10 @@ binders.tryon = () => {
     const b = await exportBlob(); if (!b) return showErr('לא הצלחנו לשמור. נסו שוב.');
     if (isNative && await nativeShare(b, 'היי תום, ככה דמיינתי את הקעקוע – מצרפ/ת הדמיה מהאפליקציה 🙂')) return;
     // אייפון ואתר: ההדמיה נשלחת לתום במייל, והוואטסאפ נפתח ישר בשיחה איתה
-    const btn = $('#try-send'); const label = btn.textContent; btn.disabled = true; btn.textContent = 'שולח…';
+    const btn = $('#try-send'); const undo = busy(btn, 'שולח…');
     const ref = photoRef();
     const ok = await sendPhotosToTom([await shrinkImage(b, 1400, 0.82)], { what: 'tryon', ref });
-    btn.disabled = false; btn.textContent = label;
+    undo();
     if (!ok) { download(b); showErr('התמונה נשמרה במכשיר. עכשיו נפתח וואטסאפ – צרפו אותה להודעה.'); setTimeout(() => openExternal(waLink('היי תום, ככה דמיינתי את הקעקוע 🙂')), 1800); return; }
     const link = waLink(`היי תום, שלחתי לך הדמיה של הקעקוע מהאפליקציה – מספר #${ref} 🙂`);
     // גיבוי לאייפון: אם הדפדפן חסם את הפתיחה האוטומטית – כפתור ללחיצה
