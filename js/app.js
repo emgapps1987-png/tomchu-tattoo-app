@@ -116,6 +116,7 @@ views.home = () => `
       <a class="btn btn-tint tint-teal" href="#/health"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M12 10v6M9 13h6"/></svg></span>הצהרת בריאות</a>
       <a class="btn btn-tint tint-green" href="https://wa.me/${CONFIG.whatsapp}" target="_blank" rel="noopener"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"/></svg></span>וואטסאפ לתום</a>
     </div>
+    <a class="btn btn-tint tint-gift" href="#/gift"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="8" width="17" height="12" rx="2"/><path d="M3.5 12h17M12 8v12M12 8c-1.5-3-5-3.5-5-1.2C7 8 9.5 8 12 8zM12 8c1.5-3 5-3.5 5-1.2C17 8 14.5 8 12 8z"/></svg></span>שובר מתנה – לפנק מישהו בקעקוע</a>
     <a class="btn btn-tint tint-sky" href="#/tryon"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="3"/><circle cx="12" cy="12" r="3.2"/></svg></span>איך זה ייראה עליי? – הדמיה על הגוף</a>
     ${CONFIG.sketchEnabled ? `<a class="btn btn-tint tint-rose" href="#/sketch"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.6L12 15l-1.8-4.4L5.5 9l4.7-1.4z"/><path d="M18 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></span>רעיון מקורי – סקיצה ב־AI</a>` : ''}
     <a class="btn btn-tint tint-violet" href="#/ideas"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>מחפשים השראה? רעיונות מפינטרסט</a>
@@ -538,7 +539,7 @@ views.accessibility = () => `
 // ---------------------------------------------------------------------
 // ניתוב
 // ---------------------------------------------------------------------
-const titles = { home: 'בית', about: 'תום', gallery: 'עבודות', care: 'מדריך ההחלמה', articles: 'מאמרים', article: 'מאמר', contact: 'פנייה לתום', health: 'הצהרת בריאות', done: 'תודה', accessibility: 'הצהרת נגישות', promo: 'מבצע החודש', ideas: 'רעיונות מפינטרסט', sketch: 'רעיון מקורי', tryon: 'הדמיה על הגוף' };
+const titles = { home: 'בית', about: 'תום', gallery: 'עבודות', care: 'מדריך ההחלמה', articles: 'מאמרים', article: 'מאמר', contact: 'פנייה לתום', health: 'הצהרת בריאות', done: 'תודה', accessibility: 'הצהרת נגישות', promo: 'מבצע החודש', ideas: 'רעיונות מפינטרסט', sketch: 'רעיון מקורי', tryon: 'הדמיה על הגוף', gift: 'שובר מתנה' };
 const tabOf = (name, param) => ({ about: 'about', accessibility: 'about', gallery: 'gallery', contact: 'contact', health: 'health', done: param === 'health' ? 'health' : 'contact' }[name] || 'home');
 
 function render() {
@@ -547,6 +548,13 @@ function render() {
   if (name === 'done' && param === 'health' && !state.lastHealth) { location.replace('#/health'); return; }
   const main = $('#main');
   main.innerHTML = views[name](param);
+  // מעבר בין מסכים: המסך החדש נכנס בדהייה ועלייה, והחלקים שלו עולים אחד אחרי השני
+  const route = name + '/' + (param || '');
+  if (rendered && (route !== lastRoute || animNext) && !reduceMotion()) {
+    const scr = main.firstElementChild;
+    if (scr) { [...scr.children].forEach((c, k) => c.style.setProperty('--k', Math.min(k, 8))); scr.classList.add('scr-in'); setTimeout(() => scr.classList.remove('scr-in'), 900); }
+  }
+  lastRoute = route; animNext = false;
   // הצהרת הבריאות והמאמרים – בעברית בלבד (מסמך משפטי / תוכן ארוך)
   const heOnly = LANG !== 'he' && (name === 'health' || name === 'articles' || name === 'article' || (name === 'done' && param === 'health'));
   if (heOnly) { const scr = main.firstElementChild; scr.setAttribute('data-i18n-skip', ''); scr.setAttribute('lang', 'he'); scr.setAttribute('dir', 'rtl');
@@ -577,12 +585,305 @@ function enhanceDates(root) {
     inp.addEventListener('click', () => { try { inp.showPicker && inp.showPicker(); } catch (e) {} });
   });
 }
-let rendered = false;
+let rendered = false, lastRoute = '', animNext = false;
+const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+// היציאה מהמסך הקודם: דהייה קצרה ואז המסך החדש
+function leaveThenRender() {
+  const scr = $('#main')?.firstElementChild;
+  if (!rendered || !scr || reduceMotion()) { render(); return; }
+  scr.classList.add('scr-out'); setTimeout(render, 130);
+}
 
 // ---------------------------------------------------------------------
 // התנהגות לכל מסך
 // ---------------------------------------------------------------------
 const binders = {};
+
+// ---------------------------------------------------------------------
+// שובר מתנה: קונים באפליקציה, משלמים בביט/פייבוקס, ותום מאשרת שהכסף הגיע.
+// בטלפון נשמרים רק קודי השוברים שקניתם (בלי שמות וטלפונים).
+// ---------------------------------------------------------------------
+const GIFT_DESIGNS = ['קשת', 'אמרלד', 'פוקסיה'];
+const PAY_NAME = { bit: 'ביט', pbx: 'פייבוקס' };
+const giftNew = () => ({ step: 1, amt: '', design: 0, from: '', phone: '', to: '', send: 'me', toPhone: '', msg: '', pay: 'bit' });
+state.gift = giftNew();
+const myGifts = () => { try { return JSON.parse(store.get('tt-gifts') || '[]'); } catch (e) { return []; } };
+const addMyGift = (code) => store.set('tt-gifts', JSON.stringify([code, ...myGifts().filter((c) => c !== code)].slice(0, 20)));
+const nis = (n) => `₪${Number(n || 0).toLocaleString('he-IL')}`;
+const giftLink = (code) => `${CONFIG.siteUrl}#/gift/${code}`;
+const ilDate = (iso) => (iso ? String(iso).split('-').reverse().join('.') : '');
+const intlPhone = (p) => { const d = String(p || '').replace(/\D/g, ''); return d.startsWith('972') ? d : '972' + d.replace(/^0/, ''); };
+
+function giftCard(g, extra = '') {
+  return `<div class="gv gv-${g.design || 0} ${extra}" aria-label="שובר מתנה">
+    <img class="gv-bird" src="assets/img/logo-dark.png" alt="">
+    <div class="gv-top"><span class="gv-brand" lang="en">Tomchu Tattoo</span><span class="gv-kind">שובר מתנה לקעקוע</span></div>
+    <div class="gv-main">${g.to ? `<div class="gv-to"><span class="gv-for">עבור</span> <span data-i18n-skip>${esc(g.to)}</span></div>` : ''}<div class="gv-amt" dir="ltr">${g.amount ? nis(g.amount) : '₪—'}</div>${g.msg ? `<div class="gv-msg" data-i18n-skip>${esc(g.msg)}</div>` : ''}</div>
+    <div class="gv-foot">${g.from ? `<span class="gv-from"><span>באהבה,</span> <span data-i18n-skip>${esc(g.from)}</span></span>` : ''}<span class="gv-code" dir="ltr">${g.code || 'TT-••••••'}</span></div>
+    ${extra === 'gv-pending' ? '<span class="gv-stamp">ממתין לאישור תשלום</span>' : ''}</div>`;
+}
+
+views.gift = (code) => {
+  if (code) return `<section class="screen" aria-labelledby="gift-h"><h1 id="gift-h" class="sr-only">שובר מתנה</h1><div id="gift-page" class="stack" style="gap:16px"><div class="gift-loading">${spinner(44)}<span class="muted">טוען את השובר…</span></div></div></section>`;
+  const g = state.gift, s = g.step, amt = parseInt(g.amt, 10) || 0;
+  const live = { amount: amt, design: g.design, to: g.to, from: g.from, msg: g.msg };
+  const steps = `<div class="gift-prog" aria-hidden="true">${[1, 2, 3].map((i) => `<i class="${i <= s ? 'on' : ''}"></i>`).join('')}</div>`;
+  let body = '';
+  if (s === 1) body = `
+    <div id="gift-live">${giftCard(live)}</div>
+    <div class="stack" style="gap:8px">
+      <label class="lbl" for="g-amt">על איזה סכום השובר?</label>
+      <div class="gift-amt" id="g-amt-box">
+        <button type="button" class="gift-step" data-gstep="50" aria-label="הוספת 50 ש״ח">+</button>
+        <span class="gift-amt-in"><span aria-hidden="true">₪</span><input id="g-amt" inputmode="numeric" autocomplete="off" placeholder="${CONFIG.giftMin}" value="${esc(g.amt)}" aria-describedby="g-amt-hint"></span>
+        <button type="button" class="gift-step" data-gstep="-50" aria-label="הורדת 50 ש״ח">−</button>
+      </div>
+      <p class="hint" id="g-amt-hint" style="text-align:center">מינימום ${nis(CONFIG.giftMin)} · כל סכום מעל זה</p>
+      <p class="err" id="g-amt-err" role="alert"></p>
+    </div>
+    <div class="stack" style="gap:8px"><span class="lbl" id="g-des-l">עיצוב</span>
+      <div class="gift-designs" role="group" aria-labelledby="g-des-l">${GIFT_DESIGNS.map((n, i) => `<button type="button" data-gdes="${i}" aria-pressed="${g.design === i}"><span class="gv gv-${i} gv-mini"><img class="gv-bird" src="assets/img/logo-dark.png" alt=""></span>${n}</button>`).join('')}</div>
+    </div>`;
+  if (s === 2) body = `
+    <div id="gift-live">${giftCard(live)}</div>
+    <div class="stack" style="gap:6px"><label class="lbl" for="g-to">שם המקבל/ת</label><input class="fld" id="g-to" maxlength="40" value="${esc(g.to)}" autocomplete="off"><p class="err" id="g-to-err"></p></div>
+    <div class="stack" style="gap:6px"><label class="lbl" for="g-from">השם שלך</label><input class="fld" id="g-from" maxlength="40" value="${esc(g.from)}" autocomplete="name"><p class="err" id="g-from-err"></p></div>
+    <div class="stack" style="gap:6px"><label class="lbl" for="g-phone">הטלפון שלך</label><input class="fld" id="g-phone" type="tel" inputmode="tel" dir="ltr" maxlength="20" value="${esc(g.phone)}" autocomplete="tel" aria-describedby="g-phone-h"><p class="hint" id="g-phone-h">כדי שתום תזהה את ההעברה ותוכל לחזור אליך</p><p class="err" id="g-phone-err"></p></div>
+    <div class="stack" style="gap:6px"><label class="lbl" for="g-msg">הקדשה (לא חובה)</label><textarea class="fld" id="g-msg" rows="2" maxlength="90">${esc(g.msg)}</textarea></div>
+    <div class="stack" style="gap:8px"><span class="lbl" id="g-send-l">איך לשלוח את השובר?</span>
+      <div class="grid2" role="group" aria-labelledby="g-send-l">
+        <button type="button" class="gift-opt" data-gsend="me" aria-pressed="${g.send === 'me'}"><b>אשלח בעצמי</b><small>תקבלו את השובר ותעבירו</small></button>
+        <button type="button" class="gift-opt" data-gsend="them" aria-pressed="${g.send === 'them'}"><b>ישר אליה/יו</b><small>בוואטסאפ למקבל/ת</small></button>
+      </div>
+      ${g.send === 'them' ? `<label class="lbl" for="g-tophone" style="margin-top:4px">הטלפון של המקבל/ת</label><input class="fld" id="g-tophone" type="tel" inputmode="tel" dir="ltr" maxlength="20" value="${esc(g.toPhone)}" autocomplete="off"><p class="err" id="g-tophone-err"></p>` : ''}
+    </div>`;
+  if (s === 3) body = `
+    <div class="gift-rows">
+      <div><span>שובר מתנה</span><b dir="ltr">${nis(amt)}</b></div>
+      <div><span>למי</span><b data-i18n-skip>${esc(g.to)}</b></div>
+      <div><span>שליחה</span><b>${g.send === 'me' ? 'אליי' : 'ישר בוואטסאפ'}</b></div>
+      <div><span>תוקף</span><b>שנה מהיום</b></div>
+      <div class="tot"><span>לתשלום</span><b dir="ltr">${nis(amt)}</b></div>
+    </div>
+    <div class="stack" style="gap:8px"><span class="lbl" id="g-pay-l">איך משלמים?</span>
+      <div class="gift-pay" role="group" aria-labelledby="g-pay-l">
+        <button type="button" data-gpay="bit" aria-pressed="${g.pay === 'bit'}"><span class="gp-ico gp-bit" lang="en">bit</span>ביט</button>
+        <button type="button" data-gpay="pbx" aria-pressed="${g.pay === 'pbx'}"><span class="gp-ico gp-pbx" lang="en">PayBox</span>פייבוקס</button>
+      </div>
+    </div>
+    <div class="card gift-how"><b>מה קורה עכשיו?</b><ol><li>השובר נשמר ומחכה לתשלום.</li><li>מעבירים את הסכום לתום באפליקציה שבחרתם.</li><li>תום רואה את ההעברה ומאשרת, והשובר נפתח.</li></ol></div>
+    <p class="err" id="g-send-err" role="alert"></p>`;
+  const next = s === 1 ? (amt ? `המשך · ${nis(amt)}` : 'המשך') : s === 2 ? 'להמשך לתשלום' : 'אישור והמשך לתשלום';
+  return `
+<section class="screen gift" aria-labelledby="gift-h">
+  <div class="stack" style="gap:10px"><h1 id="gift-h">${['', 'שובר מתנה', 'למי השובר?', 'תשלום'][s]}</h1>${steps}</div>
+  ${body}
+  <div class="stack" style="gap:10px">
+    <button type="button" class="btn btn-gift" id="g-next">${next}</button>
+    <button type="button" class="btn btn-outline" id="h-prev" ${s === 1 ? 'hidden' : ''}>חזרה</button>
+  </div>
+</section>`;
+};
+
+binders.gift = (code) => {
+  if (code) { giftPage(code); return; }
+  const g = state.gift;
+  const live = () => { const box = $('#gift-live'); if (box) box.innerHTML = giftCard({ amount: parseInt(g.amt, 10) || 0, design: g.design, to: g.to, from: g.from, msg: g.msg }); };
+  const setNext = () => { if (g.step === 1) { const a = parseInt(g.amt, 10) || 0; $('#g-next').textContent = a ? `המשך · ${nis(a)}` : 'המשך'; } };
+  const amt = $('#g-amt');
+  amt?.addEventListener('input', () => { amt.value = amt.value.replace(/\D/g, '').slice(0, 5); g.amt = amt.value; $('#g-amt-box').classList.remove('bad'); $('#g-amt-err').textContent = ''; live(); setNext(); });
+  $$('[data-gstep]').forEach((b) => b.addEventListener('click', () => {
+    const cur = parseInt(g.amt, 10) || 0, st = Number(b.dataset.gstep);
+    g.amt = String(Math.max(CONFIG.giftMin, cur ? cur + st : CONFIG.giftMin)); amt.value = g.amt; amt.dispatchEvent(new Event('input'));
+  }));
+  $$('[data-gdes]').forEach((b) => b.addEventListener('click', () => { g.design = Number(b.dataset.gdes); $$('[data-gdes]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); live(); }));
+  [['g-to', 'to'], ['g-from', 'from'], ['g-phone', 'phone'], ['g-msg', 'msg'], ['g-tophone', 'toPhone']].forEach(([id, k]) => {
+    const el = $('#' + id); el?.addEventListener('input', () => { g[k] = el.value; el.removeAttribute('aria-invalid'); const e = $('#' + id + '-err'); if (e) e.textContent = ''; if (k !== 'phone' && k !== 'toPhone') live(); });
+  });
+  $$('[data-gsend]').forEach((b) => b.addEventListener('click', () => { g.send = b.dataset.gsend; render(); if (g.send === 'them') $('#g-tophone')?.focus(); }));
+  $$('[data-gpay]').forEach((b) => b.addEventListener('click', () => { g.pay = b.dataset.gpay; $$('[data-gpay]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); }));
+  const go = (n) => { g.step = n; animNext = true; render(); };
+  $('#h-prev')?.addEventListener('click', () => go(g.step - 1));
+  const bad = (id, msg) => { const el = $('#' + id); el.setAttribute('aria-invalid', 'true'); $('#' + id + '-err').textContent = tr(msg); return el; };
+  $('#g-next').addEventListener('click', async () => {
+    if (g.step === 1) {
+      const a = parseInt(g.amt, 10) || 0;
+      if (a < CONFIG.giftMin) { $('#g-amt-box').classList.add('bad'); $('#g-amt-err').textContent = tr(a ? `הסכום המינימלי לשובר הוא ${nis(CONFIG.giftMin)}` : 'כתבו סכום לשובר'); announce($('#g-amt-err').textContent); amt.focus(); return; }
+      return go(2);
+    }
+    if (g.step === 2) {
+      const errs = [];
+      if (!g.to.trim()) errs.push(bad('g-to', 'כתבו למי השובר'));
+      if (!g.from.trim()) errs.push(bad('g-from', 'כתבו את השם שלך'));
+      if (!validPhone(g.phone)) errs.push(bad('g-phone', 'כתבו מספר טלפון תקין'));
+      if (g.send === 'them' && !validPhone(g.toPhone)) errs.push(bad('g-tophone', 'כתבו מספר טלפון תקין'));
+      if (errs.length) { errs[0].focus(); announce(tr('יש שדות שצריך למלא')); return; }
+      return go(3);
+    }
+    const btn = $('#g-next'), err = $('#g-send-err'); err.textContent = '';
+    const undo = busy(btn, 'שומר את השובר…');
+    try {
+      const r = await postJson(CONFIG.healthEndpoint, { kind: 'gift', amount: parseInt(g.amt, 10), design: g.design, from: g.from.trim(), phone: g.phone, to: g.to.trim(), toPhone: g.send === 'them' ? g.toPhone : '', msg: g.msg.trim(), pay: g.pay }).then((x) => x.json());
+      if (!r.ok) throw new Error(r.error);
+      addMyGift(r.code);
+      store.set('tt-gift-meta-' + r.code, JSON.stringify({ pay: g.pay, toPhone: g.send === 'them' ? g.toPhone : '' }));
+      state.gift = giftNew();
+      location.hash = '#/gift/' + r.code;
+    } catch (e) {
+      undo(); err.textContent = tr('לא הצלחנו לשמור את השובר. בדקו את החיבור לאינטרנט ונסו שוב.'); announce(err.textContent);
+    }
+  });
+};
+
+let giftTimer = null;
+async function giftPage(code) {
+  clearTimeout(giftTimer);
+  const box = $('#gift-page'); if (!box) return;
+  code = String(code).toUpperCase();
+  let g;
+  try { g = await fetch(`${CONFIG.healthEndpoint}?action=gift&code=${encodeURIComponent(code)}`).then((r) => r.json()); } catch (e) { g = { ok: false, net: true }; }
+  if (!$('#gift-page') || !location.hash.includes(code)) return; // עברו מסך בינתיים
+  const mine = myGifts().includes(code);
+  const meta = (() => { try { return JSON.parse(store.get('tt-gift-meta-' + code) || '{}'); } catch (e) { return {}; } })();
+  const book = waLink(`היי תום, יש לי שובר מתנה ${code} ואשמח לקבוע תור לקעקוע 🙂`);
+  const H = (t) => { $('#gift-h').textContent = tr(t); $('#gift-h').classList.remove('sr-only'); };
+  if (!g.ok) {
+    H(g.net ? 'אין חיבור כרגע' : 'השובר לא נמצא');
+    box.innerHTML = `<p class="muted">${g.net ? 'לא הצלחנו לטעון את השובר. בדקו את החיבור לאינטרנט ונסו שוב.' : 'בדקו שהקישור הועתק במלואו, או פנו לתום בוואטסאפ.'}</p>
+      ${g.net ? '<button type="button" class="btn btn-outline" id="g-retry">לנסות שוב</button>' : `<a class="btn btn-outline" href="${CONFIG.whatsapp ? waLink('היי תום, יש לי שאלה לגבי שובר מתנה') : '#/contact'}" target="_blank" rel="noopener">וואטסאפ לתום</a>`}`;
+    $('#g-retry')?.addEventListener('click', () => { box.innerHTML = `<div class="gift-loading">${spinner(44)}</div>`; giftPage(code); });
+    return;
+  }
+  const rows = `<div class="gift-rows"><div><span>סכום</span><b dir="ltr">${nis(g.amount)}</b></div><div><span>קוד</span><b dir="ltr">${g.code}</b></div><div><span>בתוקף עד</span><b>${ilDate(g.until)}</b></div></div>`;
+  if (mine && g.status === 'pending') {
+    const pay = PAY_NAME[meta.pay] || 'ביט / פייבוקס';
+    H('כמעט שם!');
+    box.innerHTML = `${giftCard(g, 'gv-pending')}
+      <div class="gift-status wait" role="status"><span class="dot" aria-hidden="true"></span><span>ממתין שתום תאשר את התשלום</span></div>
+      <div class="card gift-paybox">
+        <p><span>מעבירים</span> <b dir="ltr">${nis(g.amount)}</b> <span>ב${pay}</span> <span>לתום גבע:</span></p>
+        <div class="gift-num"><b dir="ltr">${CONFIG.phoneDisplay}</b><button type="button" class="btn btn-small btn-outline" id="g-copy">העתקת המספר</button></div>
+        <p class="hint">כדאי לכתוב בהערה להעברה: שובר <span dir="ltr">${g.code}</span></p>
+      </div>
+      <p class="muted">אחרי שתום רואה את ההעברה היא מאשרת, והשובר נפתח כאן. אפשר לסגור את האפליקציה ולחזור אחר כך – השובר שמור.</p>
+      <button type="button" class="btn btn-outline" id="g-check">לבדוק אם השובר אושר</button>`;
+    $('#g-copy').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(CONFIG.phoneDisplay.replace(/-/g, '')); $('#g-copy').textContent = tr('הועתק ✓'); announce(tr('המספר הועתק')); } catch (e) { $('#g-copy').textContent = CONFIG.phoneDisplay; }
+    });
+    $('#g-check').addEventListener('click', () => { const u = busy($('#g-check'), 'בודק…'); giftPage(code).finally(u); });
+    giftTimer = setTimeout(() => giftPage(code), 30000);
+    return;
+  }
+  if (g.status === 'pending') { H('השובר עוד לא הופעל'); box.innerHTML = `${giftCard(g, 'gv-pending')}<p class="muted">השובר יופעל ברגע שתום תאשר את התשלום. נסו שוב מאוחר יותר.</p>`; return; }
+  if (g.status === 'used' || g.status === 'expired' || g.status === 'cancel') {
+    H({ used: 'השובר מומש', expired: 'תוקף השובר פג', cancel: 'השובר בוטל' }[g.status]);
+    box.innerHTML = `${giftCard(g, 'gv-off')}${rows}<a class="btn btn-outline" href="${waLink(`היי תום, לגבי שובר מתנה ${code}`)}" target="_blank" rel="noopener">שאלה לתום בוואטסאפ</a>`;
+    return;
+  }
+  // פעיל
+  const fresh = mine && store.get('tt-gift-seen-' + code) !== '1';
+  if (mine) {
+    H(fresh ? 'השובר מוכן! 🎉' : 'השובר שלך');
+    store.set('tt-gift-seen-' + code, '1');
+    const toPhone = meta.toPhone;
+    box.innerHTML = `<div class="${fresh ? 'gv-reveal' : ''}">${giftCard(g)}</div>
+      <div class="gift-status ok" role="status"><span class="dot" aria-hidden="true"></span><span>התשלום אושר, השובר פעיל</span></div>
+      ${rows}
+      <div class="stack" style="gap:10px">
+        <button type="button" class="btn btn-wa" id="g-share">${toPhone ? 'שליחה בוואטסאפ למקבל/ת' : 'שליחת השובר'}</button>
+        <button type="button" class="btn btn-outline" id="g-textonly">${toPhone ? 'שליחה כהודעה בלבד (בלי תמונה)' : 'שליחת קישור בוואטסאפ'}</button>
+        <p class="hint">השובר יוצא מהוואטסאפ שלך – עם תמונת השובר וקישור אליו.</p>
+      </div>`;
+    if (fresh) giftConfetti();
+    const text = giftText(g);
+    const waTo = (t) => openExternal(`https://wa.me/${toPhone ? intlPhone(toPhone) : ''}?text=${encodeURIComponent(t)}`);
+    $('#g-share').addEventListener('click', async () => {
+      const undo = busy($('#g-share'), 'מכין את השובר…');
+      const blob = await giftImage(g).catch(() => null); undo();
+      if (blob && await shareImage(blob, `tomchu-gift-${g.code}.png`, text)) return;
+      waTo(text); // אין שיתוף תמונה במכשיר – שולחים הודעה עם קישור
+    });
+    $('#g-textonly').addEventListener('click', () => waTo(text));
+    return;
+  }
+  // המקבל/ת
+  H('יש לך מתנה! 🎉');
+  box.innerHTML = `<p class="gift-hi"><span data-i18n-skip>${esc(g.to)}</span>, <span>קיבלת שובר מתנה לקעקוע אצל תום</span></p>
+    <div class="gv-reveal">${giftCard(g)}</div>
+    <div class="gift-status ok"><span class="dot" aria-hidden="true"></span><span>השובר פעיל</span></div>
+    ${rows}
+    <a class="btn btn-gift" href="${book}" target="_blank" rel="noopener">לקביעת תור אצל תום</a>
+    <a class="btn btn-outline" href="#/gallery">לראות עבודות של תום</a>`;
+  if (store.get('tt-gift-seen-' + code) !== '1') { store.set('tt-gift-seen-' + code, '1'); giftConfetti(); }
+}
+
+function giftText(g) {
+  return `🎁 ${g.to}, קיבלת ממני שובר מתנה לקעקוע אצל תום ב־Tomchu Tattoo על סך ${nis(g.amount)}!` +
+    (g.msg ? `\n"${g.msg}"` : '') + `\n\nקוד השובר: ${g.code} · בתוקף עד ${ilDate(g.until)}\nלצפייה בשובר: ${giftLink(g.code)}`;
+}
+
+// שיתוף תמונה + טקסט: באנדרואיד דרך חלון השיתוף של הטלפון, באייפון ובדפדפן עם navigator.share
+async function shareImage(blob, name, text) {
+  const P = window.Capacitor && window.Capacitor.Plugins;
+  if (isNative && P && P.Filesystem && P.Share) {
+    try {
+      const data = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.onerror = no; r.readAsDataURL(blob); });
+      const f = await P.Filesystem.writeFile({ path: name, data, directory: 'CACHE' });
+      await P.Share.share({ files: [f.uri], text, dialogTitle: tr('שליחת השובר') });
+      return true;
+    } catch (e) { return /cancel/i.test(String(e && e.message)); }
+  }
+  const file = new File([blob], name, { type: blob.type });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text }); return true; }
+  } catch (e) { return e && e.name === 'AbortError'; }
+  return false;
+}
+
+function giftConfetti() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const c = document.createElement('div'); c.className = 'gift-conf'; c.setAttribute('aria-hidden', 'true');
+  const cols = ['#13A076', '#12A5B2', '#2E6FD6', '#8240C4', '#DC2F6C', '#F6F3F7'];
+  for (let i = 0; i < 48; i++) { const e = document.createElement('i'); e.style.left = Math.random() * 100 + '%'; e.style.background = cols[i % cols.length]; e.style.animationDelay = (Math.random() * 0.5) + 's'; c.appendChild(e); }
+  document.body.appendChild(c); setTimeout(() => c.remove(), 2600);
+}
+
+// תמונת השובר (PNG) לשליחה בוואטסאפ
+const GV_GRAD = [
+  [[0, '#0F8A66'], [0.28, '#0E8E99'], [0.52, '#2A5FC4'], [0.76, '#7A36B3'], [1, '#C82464']],
+  [[0, '#063B33'], [0.6, '#0C6F78'], [1, '#1856A8']],
+  [[0, '#3A0E55'], [0.55, '#8A2BB8'], [1, '#D12E6E']]
+];
+async function giftImage(g) {
+  const W = 1200, Hh = 750, c = document.createElement('canvas'); c.width = W; c.height = Hh;
+  const x = c.getContext('2d');
+  try { await document.fonts.ready; } catch (e) {}
+  const r = 48; x.beginPath(); x.moveTo(r, 0); x.arcTo(W, 0, W, Hh, r); x.arcTo(W, Hh, 0, Hh, r); x.arcTo(0, Hh, 0, 0, r); x.arcTo(0, 0, W, 0, r); x.closePath(); x.clip();
+  const gr = x.createLinearGradient(W, 0, 0, Hh); GV_GRAD[g.design || 0].forEach(([o, col]) => gr.addColorStop(o, col)); x.fillStyle = gr; x.fillRect(0, 0, W, Hh);
+  if (g.design === 1) { const rg = x.createRadialGradient(W * 0.8, Hh * 0.9, 0, W * 0.8, Hh * 0.9, W * 0.55); rg.addColorStop(0, 'rgba(27,196,143,.85)'); rg.addColorStop(1, 'rgba(27,196,143,0)'); x.fillStyle = rg; x.fillRect(0, 0, W, Hh); }
+  if (g.design === 2) { const rg = x.createRadialGradient(W * 0.85, Hh * 0.85, 0, W * 0.85, Hh * 0.85, W * 0.5); rg.addColorStop(0, 'rgba(255,77,134,.85)'); rg.addColorStop(1, 'rgba(255,77,134,0)'); x.fillStyle = rg; x.fillRect(0, 0, W, Hh); }
+  const bird = await new Promise((ok) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = 'assets/img/logo-dark.png'; });
+  if (bird) { const bw = W * 0.56, bh = bw * bird.height / bird.width; x.save(); x.shadowColor = 'rgba(0,0,0,.45)'; x.shadowBlur = 30; x.shadowOffsetY = 14; x.drawImage(bird, W - bw * 0.94, Hh - bh * 0.84, bw, bh); x.restore(); }
+  x.fillStyle = '#fff'; x.direction = 'rtl'; x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+  x.shadowColor = 'rgba(0,0,0,.3)'; x.shadowBlur = 16;
+  x.font = '700 34px Rubik, Heebo, sans-serif'; x.direction = 'ltr'; x.fillText('TOMCHU TATTOO', 64, 96);
+  x.direction = 'rtl'; x.textAlign = 'left';
+  const L = (s, font, y) => { x.font = font; x.textAlign = 'right'; x.direction = 'rtl'; x.fillText(s, 64 + x.measureText(s).width, y); };
+  L(tr('שובר מתנה לקעקוע'), '500 28px Heebo, sans-serif', 140);
+  L(`${tr('עבור')} ${g.to}`, '700 64px Rubik, Heebo, sans-serif', 320);
+  x.font = '800 140px Rubik, Heebo, sans-serif'; x.direction = 'ltr'; x.textAlign = 'left'; x.fillText(nis(g.amount), 64, 460);
+  if (g.msg) { x.font = '500 30px Heebo, sans-serif'; const words = g.msg.split(/\s+/), lines = []; let cur = '';
+    words.forEach((w) => { const t = cur ? cur + ' ' + w : w; if (x.measureText(t).width > 560 && cur) { lines.push(cur); cur = w; } else cur = t; }); if (cur) lines.push(cur);
+    lines.slice(0, 2).forEach((ln, i) => L(ln, '500 30px Heebo, sans-serif', 520 + i * 40)); }
+  x.shadowBlur = 0;
+  if (g.from) L(`${tr('באהבה,')} ${g.from}`, '500 28px Heebo, sans-serif', 680);
+  x.font = '700 30px ui-monospace, Menlo, monospace'; x.direction = 'ltr'; const cw = x.measureText(g.code).width + 32;
+  const cx = g.from ? 64 + x.measureText('').width : 64; const fromW = g.from ? (() => { x.font = '500 28px Heebo, sans-serif'; const w = x.measureText(`${tr('באהבה,')} ${g.from}`).width; x.font = '700 30px ui-monospace, Menlo, monospace'; return w + 24; })() : 0;
+  x.fillStyle = 'rgba(0,0,0,.3)'; x.beginPath(); if (x.roundRect) x.roundRect(cx + fromW, 642, cw, 52, 10); else x.rect(cx + fromW, 642, cw, 52); x.fill();
+  x.fillStyle = '#fff'; x.textAlign = 'left'; x.fillText(g.code, cx + fromW + 16, 680);
+  return new Promise((ok) => c.toBlob((b) => ok(b), 'image/png'));
+}
+
 binders.care = () => {
   const j = careLoad();
   if (!j) {
@@ -1889,7 +2190,7 @@ playIntro();
 loadPromo();
 initPush();
 setTimeout(showInstallTip, 3800);
-window.addEventListener('hashchange', render);
+window.addEventListener('hashchange', leaveThenRender);
 render();
 if (!isNative && 'serviceWorker' in navigator && location.protocol === 'https:') {
   // כש־OneSignal פעיל הוא רושם את אותו sw.js (עם הפרמטרים שלו). רישום כפול גורם להם להחליף זה את זה,

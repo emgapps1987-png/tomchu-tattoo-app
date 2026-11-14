@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 27; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
+var SCRIPT_VERSION = 28; // 28: שוברי מתנה · 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -424,6 +424,7 @@ function doPost(e) {
     if (d.kind === 'sketchLab') return sketchLab_(d);
     if (!rateOk_()) return json_({ ok: false, error: 'busy' });
     if (d.kind === 'photos') return photos_(d);
+    if (d.kind === 'gift') return giftCreate_(d);
     if (d.kind !== 'health') return json_({ ok: false, error: 'unknown kind' });
     if (!d.name || !d.signature || !Array.isArray(d.answers)) return json_({ ok: false, error: 'missing fields' });
     if (!SIG_RE.test(String(d.signature))) return json_({ ok: false, error: 'bad signature' });
@@ -608,6 +609,8 @@ function doGet(e) {
     catch (err) { return json_({ ok: false }); }
   }
   if (p.action === 'ics') return careIcs_(String(p.start || ''));
+  if (p.action === 'gift') return json_(giftPublic_(String(p.code || '')));
+  if (p.gift && p.admin) return giftAdmin_(String(p.gift), String(p['do'] || ''), String(p.admin));
   if (p.admin) {
     if (!isAdminKey_(p.admin)) return HtmlService.createHtmlOutput('<p dir="rtl" style="font-family:Arial;font-size:18px;padding:24px">אין גישה.</p>');
     var t = HtmlService.createTemplate(ADMIN_HTML_);
@@ -921,3 +924,93 @@ AI_JS_ +
 '.savePromo(KEY,{title:$("title").value,text:$("text").value,until:$("until").value,imageData:imgData,keepImage:$("keep").checked,notify:$("notify").checked});});' +
 '$("end").addEventListener("click",function(){if(!confirm("להוריד את המבצע מהאפליקציה?"))return;google.script.run.withSuccessHandler(function(){if(CUR)CUR.active=false;showCur(CUR);$("msg").textContent="✔ המבצע הורד";}).endPromo(KEY);});' +
 '</script></body></html>';
+
+
+// =====================================================================
+// שוברי מתנה: הקונה ממלא פרטים באפליקציה ומעביר בביט/פייבוקס.
+// השובר נוצר "ממתין", ותום מאשרת בקישור מהמייל אחרי שראתה את הכסף.
+// כל השוברים בגיליון "Tomchu – שוברי מתנה". הקוד הוא הסוד – בלי הקוד אי אפשר לראות שובר.
+// =====================================================================
+var GIFT_SHEET = 'Tomchu – שוברי מתנה';
+var GIFT_MIN = 200;
+var GIFT_HEAD = ['קוד', 'נוצר', 'סטטוס', 'סכום', 'ממי', 'טלפון הקונה', 'למי', 'טלפון המקבל/ת', 'הקדשה', 'עיצוב', 'תשלום', 'אושר', 'מומש', 'בתוקף עד'];
+var GIFT_STATUS = { pending: 'ממתין לתשלום', active: 'פעיל', used: 'מומש', cancel: 'בוטל' };
+var GIFT_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+function giftSheet_() {
+  var files = DriveApp.getFilesByType(MimeType.GOOGLE_SHEETS), file = null;
+  while (files.hasNext()) { var f = files.next(); if (f.getName() === GIFT_SHEET && !f.isTrashed()) { file = f; break; } }
+  var ss = file ? SpreadsheetApp.open(file) : SpreadsheetApp.create(GIFT_SHEET);
+  var sh = ss.getSheets()[0];
+  if (sh.getLastRow() === 0) { sh.setFrozenRows(1); sh.setRightToLeft(true); sh.getRange(1, 1, 1, GIFT_HEAD.length).setValues([GIFT_HEAD]).setFontWeight('bold'); }
+  return sh;
+}
+function giftFind_(code) {
+  if (!/^TT-[A-Z0-9]{6}$/.test(code)) return null;
+  var sh = giftSheet_(), n = sh.getLastRow(); if (n < 2) return null;
+  var codes = sh.getRange(2, 1, n - 1, 1).getValues();
+  for (var i = 0; i < codes.length; i++) if (codes[i][0] === code) return { sh: sh, row: i + 2, v: sh.getRange(i + 2, 1, 1, GIFT_HEAD.length).getValues()[0] };
+  return null;
+}
+function giftKey_(label) { var s = ''; for (var k in GIFT_STATUS) if (GIFT_STATUS[k] === label) s = k; return s; }
+function giftTxt_(v, max) { return String(v == null ? '' : v).replace(/[\u0000-\u001f<>]/g, ' ').trim().slice(0, max); }
+
+function giftCreate_(d) {
+  var amount = Math.round(Number(d.amount));
+  if (!(amount >= GIFT_MIN && amount <= 20000)) return json_({ ok: false, error: 'amount' });
+  var from = giftTxt_(d.from, 40), to = giftTxt_(d.to, 40), msg = giftTxt_(d.msg, 90);
+  var phone = giftTxt_(d.phone, 20).replace(/[^\d+-]/g, ''), toPhone = giftTxt_(d.toPhone, 20).replace(/[^\d+-]/g, '');
+  if (!from || !to || phone.replace(/\D/g, '').length < 9) return json_({ ok: false, error: 'missing fields' });
+  var pay = d.pay === 'pbx' ? 'פייבוקס' : 'ביט';
+  var design = [0, 1, 2].indexOf(Number(d.design)) >= 0 ? Number(d.design) : 0;
+  var lock = LockService.getScriptLock(); lock.waitLock(10000);
+  try {
+    var sh = giftSheet_(), code;
+    var used = {}; if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues().forEach(function (r) { used[r[0]] = 1; });
+    do { code = 'TT-'; for (var i = 0; i < 6; i++) code += GIFT_ABC.charAt(Math.floor(Math.random() * GIFT_ABC.length)); } while (used[code]);
+    var tz = 'Asia/Jerusalem', now = new Date(), until = new Date(now.getTime()); until.setFullYear(until.getFullYear() + 1);
+    var row = [code, Utilities.formatDate(now, tz, 'dd/MM/yyyy HH:mm'), GIFT_STATUS.pending, amount, cell_(from), "'" + phone, cell_(to), "'" + toPhone, cell_(msg), design, pay, '', '', Utilities.formatDate(until, tz, 'yyyy-MM-dd')];
+    sh.appendRow(row);
+  } finally { lock.releaseLock(); }
+  var key = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  var base = ScriptApp.getService().getUrl() + '?gift=' + code + '&admin=' + key + '&do=';
+  var e = function (x) { return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+  var btn = function (href, label, bg) { return '<a href="' + href + '" style="display:inline-block;background:' + bg + ';color:#fff;text-decoration:none;font-weight:bold;padding:12px 20px;border-radius:10px;margin:4px 0 4px 8px">' + label + '</a>'; };
+  MailApp.sendEmail({
+    to: EMAIL_TO,
+    subject: '🎁 שובר מתנה חדש ₪' + amount + ' – ממתין לתשלום ב' + pay + ' (' + from + ')',
+    htmlBody: '<div dir="rtl" style="font-family:Arial;font-size:15px;line-height:1.6">' +
+      '<p><b>' + e(from) + '</b> (' + e(phone) + ') רוצה לקנות שובר מתנה על <b>₪' + amount + '</b> ל<b>' + e(to) + '</b>, ותשלום ב<b>' + pay + '</b>.</p>' +
+      (msg ? '<p>הקדשה: "' + e(msg) + '"</p>' : '') +
+      '<p>קוד השובר: <b dir="ltr">' + code + '</b></p>' +
+      '<p>ברגע שהכסף הגיע אלייך ב' + pay + ' – לחצי על "התשלום התקבל" והשובר ייפתח אצל ' + e(from) + '.</p>' +
+      '<p>' + btn(base + 'ok', '✔ התשלום התקבל – להפעיל את השובר', '#13A076') + btn(base + 'cancel', 'ביטול השובר', '#8A8190') + '</p>' +
+      '<p style="color:#666;font-size:13px">כשמגיעים לקעקוע עם השובר: ' + btn(base + 'used', 'סימון שהשובר מומש', '#7A36B3') + '</p></div>',
+    name: 'Tomchu Tattoo – אפליקציה'
+  });
+  return json_({ ok: true, code: code, until: row[13] });
+}
+
+function giftPublic_(code) {
+  var g = giftFind_(code); if (!g) return { ok: false, error: 'not found' };
+  var v = g.v, until = v[13] instanceof Date ? Utilities.formatDate(v[13], 'Asia/Jerusalem', 'yyyy-MM-dd') : String(v[13]);
+  var status = giftKey_(v[2]) || 'pending';
+  if (status === 'active' && until < Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'yyyy-MM-dd')) status = 'expired';
+  return { ok: true, code: code, status: status, amount: Number(v[3]), from: String(v[4]), to: String(v[6]), msg: String(v[8]), design: Number(v[9]) || 0, until: until };
+}
+
+function giftAdmin_(code, act, admin) {
+  var page = function (h) { return HtmlService.createHtmlOutput('<div dir="rtl" style="font-family:Arial;font-size:20px;padding:28px;line-height:1.6">' + h + '</div>').addMetaTag('viewport', 'width=device-width, initial-scale=1').setTitle('שובר מתנה – Tomchu'); };
+  if (!isAdminKey_(admin)) return page('אין גישה.');
+  var g = giftFind_(code); if (!g) return page('השובר ' + code + ' לא נמצא.');
+  var to = { ok: 'active', used: 'used', cancel: 'cancel' }[act];
+  var now = Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'dd/MM/yyyy HH:mm');
+  if (to) {
+    g.sh.getRange(g.row, 3).setValue(GIFT_STATUS[to]);
+    if (to === 'active') g.sh.getRange(g.row, 12).setValue(now);
+    if (to === 'used') g.sh.getRange(g.row, 13).setValue(now);
+  }
+  var v = giftFind_(code).v;
+  var msg = { ok: '✔ השובר הופעל! ', used: '✔ השובר סומן כמומש. ', cancel: 'השובר בוטל. ' }[act] || '';
+  return page(msg + '<br><b dir="ltr">' + code + '</b> · ₪' + v[3] + ' · מ' + v[4] + ' ל' + v[6] + '<br>סטטוס: <b>' + v[2] + '</b>');
+}
