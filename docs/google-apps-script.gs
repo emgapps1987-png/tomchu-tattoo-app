@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 24; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
+var SCRIPT_VERSION = 25; // 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
 var SHEET_NAME = 'Tomchu – הצהרות בריאות';
@@ -286,6 +286,14 @@ function sketchDraw2_(prompt, style) {
 function sketchLab_(d) {
   var key = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
   if (!key || d.key !== key) return json_({ ok: false, error: 'forbidden' });
+  if (d.action === 'btr') { // תרגום לבדיקה (כמה טקסטים בבת אחת)
+    var langs = { iw: 1, en: 1, ru: 1, ar: 1 };
+    if (!langs[d.from] || !langs[d.to]) return json_({ ok: false });
+    var items = (d.items || []).slice(0, 400).map(function (x) {
+      try { return LanguageApp.translate(String(x).slice(0, 1500), d.from, d.to); } catch (e) { return '!' + e; }
+    });
+    return json_({ ok: true, items: items });
+  }
   if (d.action === 'gmodels' || d.action === 'gimg') {
     var gk = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
     if (d.action === 'gmodels') {
