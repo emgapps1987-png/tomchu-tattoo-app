@@ -448,3 +448,12 @@ dialog.promo-dlg::backdrop { background: rgba(6,5,8,.72); }
 .thumb-btn > img { transition: opacity .3s; }
 .viewer-box { position: relative; flex: 1; min-height: 120px; display: flex; align-items: center; justify-content: center; }
 .viewer-box.is-loading > img { opacity: 0; }
+
+/* אנימציה: טשטוש לחדות (כניסה לגלריה, מעבר בין סינונים, טעינת תמונה) */
+@keyframes tt-blur-in { from { opacity: 0; transform: scale(.92); filter: blur(10px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes tt-blur-out { to { opacity: 0; transform: scale(.96); filter: blur(6px); } }
+@keyframes tt-sharpen { from { opacity: 0; filter: blur(12px); } to { opacity: 1; filter: none; } }
+.g-in { animation: tt-blur-in .55s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i, 0) * 70ms); }
+.g-out { animation: tt-blur-out .2s ease-in both; pointer-events: none; }
+.thumb-btn:not(.is-loading) > img, .viewer-box:not(.is-loading) > img { animation: tt-sharpen .45s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .g-in, .g-out, .thumb-btn > img, .viewer-box > img { animation: none !important; } }

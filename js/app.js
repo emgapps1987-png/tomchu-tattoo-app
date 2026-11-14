@@ -145,7 +145,7 @@ views.home = () => `
   <div class="stack" style="gap:10px">
     <div class="section-head"><h2 class="barred" style="--bar:#1D93B5">מהעבודות שלי</h2><a class="link-btn" href="#/gallery">לכל העבודות</a></div>
     <ul class="hscroll">
-      ${WORKS.slice(0, 6).map((w, i) => `<li style="flex:0 0 140px"><button type="button" class="thumb-btn framed" data-photo="${w.id}" style="width:140px;height:175px;--frame:${FEATHER[i % 4].c}" aria-label="${esc(w.alt)} – להגדלה"><img src="${w.src}" alt="" loading="lazy"></button></li>`).join('')}
+      ${WORKS.slice(0, 6).map((w, i) => `<li class="g-in" style="flex:0 0 140px;--i:${i}"><button type="button" class="thumb-btn framed" data-photo="${w.id}" style="width:140px;height:175px;--frame:${FEATHER[i % 4].c}" aria-label="${esc(w.alt)} – להגדלה"><img src="${w.src}" alt="" loading="lazy"></button></li>`).join('')}
     </ul>
   </div>
 
@@ -221,7 +221,7 @@ views.gallery = () => {
 };
 function galleryItems() {
   const list = state.galf === 'all' ? WORKS : WORKS.filter((w) => w.tag === state.galf);
-  return list.map((w) => `<li><button type="button" class="thumb-btn is-loading" data-photo="${w.id}" aria-label="${esc(w.alt)} – להגדלה">${spinner(40)}<img src="${w.src}" alt="" loading="lazy"><span class="badge">${TAGS[w.tag]}</span></button></li>`).join('');
+  return list.map((w, i) => `<li class="g-in" data-id="${w.id}" style="--i:${i}"><button type="button" class="thumb-btn is-loading" data-photo="${w.id}" aria-label="${esc(w.alt)} – להגדלה">${spinner(40)}<img src="${w.src}" alt="" loading="lazy"><span class="badge">${TAGS[w.tag]}</span></button></li>`).join('');
 }
 
 // ---------------------------------------------------------------------
@@ -630,11 +630,40 @@ binders.gallery = () => {
   $$('[data-filter]').forEach((b) => b.addEventListener('click', () => {
     state.galf = b.dataset.filter;
     $$('[data-filter]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.filter === state.galf)));
-    $('#gallery').innerHTML = galleryItems(); watchThumbs();
-    announce(`מוצגות ${$$('#gallery li').length} עבודות`);
+    swapGallery();
+    announce(`מוצגות ${(state.galf === 'all' ? WORKS : WORKS.filter((w) => w.tag === state.galf)).length} עבודות`);
   }));
   watchThumbs();
 };
+// מעבר בין סינונים: עבודות שנשארות לא נעלמות – רק זזות בעדינות למקום החדש.
+// עבודות שיוצאות מיטשטשות החוצה, וחדשות נכנסות מטושטשות ונהיות חדות.
+function swapGallery() {
+  const g = $('#gallery'); if (!g) return;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) { g.innerHTML = galleryItems(); watchThumbs(); return; }
+  const before = new Map([...g.children].map((li) => [li.dataset.id, li.getBoundingClientRect()]));
+  const tmp = document.createElement('ul'); tmp.innerHTML = galleryItems();
+  const nextIds = new Set([...tmp.children].map((li) => li.dataset.id));
+  const leaving = [...g.children].filter((li) => !nextIds.has(li.dataset.id));
+  leaving.forEach((li) => { li.classList.remove('g-in'); li.classList.add('g-out'); });
+  setTimeout(() => {
+    leaving.forEach((li) => li.remove());
+    // העבודות שנשארות לא יוצאות מהדף (אחרת האנימציה שלהן מתחילה מחדש) – מכניסים את החדשות ביניהן
+    const old = new Map([...g.children].map((li) => [li.dataset.id, li])); let n = 0, cur = g.firstElementChild;
+    [...tmp.children].forEach((li) => {
+      const keep = old.get(li.dataset.id);
+      if (keep) { cur = keep.nextElementSibling; return; }
+      li.style.setProperty('--i', n++); g.insertBefore(li, cur);
+    });
+    watchThumbs();
+    [...g.children].forEach((li) => {
+      const a = before.get(li.dataset.id); if (!a || li.classList.contains('g-in')) return;
+      const b = li.getBoundingClientRect(); const dx = a.left - b.left, dy = a.top - b.top;
+      if (dx || dy) li.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: 420, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    });
+  }, leaving.length ? 200 : 0);
+}
+
 // מורידים את הלוגו המסתובב כשהתמונה נטענה
 function watchThumbs() {
   $$('.thumb-btn.is-loading > img').forEach((im) => {
