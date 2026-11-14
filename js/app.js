@@ -1178,8 +1178,6 @@ function renderIdeaOut(q, fallbackHe) {
       <span style="font-weight:700">סגנון (לא חובה)</span>
       <div class="chips">${IDEA_STYLES.map((x) => `<button type="button" class="chip-btn" data-style="${esc(x.en)}" aria-pressed="${ideaState.style === x.en}">${esc(x.he)}</button>`).join('')}</div>
     </div>
-    ${q.alts.length ? `<div class="stack" style="gap:8px"><span style="font-weight:700">עוד כיוונים</span>
-      ${q.alts.map((a) => `<a class="alt-link" href="${pinUrl(a)}" target="_blank" rel="noopener"><span dir="ltr">${esc(a)}</span>${icon.fwd}</a>`).join('')}</div>` : ''}
     <a class="btn btn-pin" href="${pinUrl(q.main)}" target="_blank" rel="noopener">פתיחה בפינטרסט</a>
     <p class="muted" style="text-align:center;font-size:.85rem">מצאתם משהו? שמרו צילום מסך וצרפו אותו ל<a href="#/contact">פנייה לתום</a>.</p>
   </div>`;
