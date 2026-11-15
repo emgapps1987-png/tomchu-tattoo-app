@@ -30,7 +30,7 @@ export const CONFIG = {
   onesignalAppId: '7ab14748-0a18-438c-8c1e-0a5698cfc52d'
 };
 
-export const TAGS = { fine: 'קו עדין', sketch: 'סקיצה', color: 'צבע', studio: 'בסטודיו' };
+export const TAGS = { fine: 'קו עדין', sketch: 'סקיצה', color: 'צבע', studio: 'בסטודיו', place: 'הסטודיו שלי' };
 
 export const WORKS = [
   { id: 'w8', src: 'assets/img/works/work8.jpg', tag: 'fine', alt: 'פרח עדין בקווים זורמים' },
@@ -42,7 +42,26 @@ export const WORKS = [
   { id: 'w1', src: 'assets/img/works/work1.jpg', tag: 'sketch', alt: 'קעקוע בסגנון סקיצה של דמות מצוירת' },
   { id: 'w7', src: 'assets/img/works/work7.jpg', tag: 'fine', alt: 'עציץ קקטוס עדין על האמה' },
   { id: 'w3', src: 'assets/img/works/work3.jpg', tag: 'studio', alt: 'תום מקעקעת על פרק כף היד' },
-  { id: 'w10', src: 'assets/img/works/work10.jpg', tag: 'studio', alt: 'רגע של עבודה בסטודיו' }
+  { id: 'w10', src: 'assets/img/works/work10.jpg', tag: 'studio', alt: 'רגע של עבודה בסטודיו' },
+  { id: 'w11', src: 'assets/img/works/work11.jpg', tag: 'color', alt: 'דג זהב צבעוני עם לבבות, אחרי חידוש' },
+  { id: 'w12', src: 'assets/img/works/work12.jpg', tag: 'color', alt: 'אותו דג לפני החידוש' },
+  { id: 'w13', src: 'assets/img/works/work13.jpg', tag: 'fine', alt: 'פרחים תואמים על פרקי הידיים' },
+  { id: 'w14', src: 'assets/img/works/work14.jpg', tag: 'fine', alt: 'ראש צבי בקו רציף אחד' },
+  { id: 'w15', src: 'assets/img/works/work15.jpg', tag: 'fine', alt: 'משפט באנגלית בכתב יד' },
+  { id: 'w16', src: 'assets/img/works/work16.jpg', tag: 'fine', alt: 'המילה Art מאחורי האוזן' },
+  { id: 'w17', src: 'assets/img/works/work17.jpg', tag: 'fine', alt: 'מזל דגים מעוטר בנקודות על השוק' },
+  { id: 'w18', src: 'assets/img/works/work18.jpg', tag: 'sketch', alt: 'קסדה בסגנון סקיצה' },
+  { id: 'w19', src: 'assets/img/works/work19.jpg', tag: 'sketch', alt: 'עוגן עם חבל בסגנון סקיצה על האמה' },
+  { id: 'w20', src: 'assets/img/works/work20.jpg', tag: 'color', alt: 'שפירית טורקיז בקו עדין' },
+  { id: 'w21', src: 'assets/img/works/work21.jpg', tag: 'studio', alt: 'קעקוע פיל בתהליך, עם הסקיצה מול העיניים' },
+  { id: 'w22', src: 'assets/img/works/work22.jpg', tag: 'studio', alt: 'ינשוף ופיל – מהסימון ועד הקו' },
+  { id: 'w23', src: 'assets/img/works/work23.jpg', tag: 'studio', alt: 'עבודה על כף היד' },
+  { id: 'w24', src: 'assets/img/works/work24.jpg', tag: 'place', alt: 'הסטודיו – מבט כללי' },
+  { id: 'w25', src: 'assets/img/works/work25.jpg', tag: 'place', alt: 'פינת ההמתנה' },
+  { id: 'w26', src: 'assets/img/works/work26.jpg', tag: 'place', alt: 'פינת העבודה של תום' },
+  { id: 'w27', src: 'assets/img/works/work27.jpg', tag: 'place', alt: 'הציורים של תום על הקיר' },
+  { id: 'w28', src: 'assets/img/works/work28.jpg', tag: 'place', alt: 'קיר הכבשים הצבעוניות' },
+  { id: 'w29', src: 'assets/img/works/work29.jpg', tag: 'place', alt: 'מדף ההשראות' }
 ];
 
 // ---------------------------------------------------------------------
