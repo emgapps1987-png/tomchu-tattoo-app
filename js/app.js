@@ -757,11 +757,14 @@ async function giftPage(code) {
   const rows = `<div class="gift-rows"><div><span>סכום</span><b dir="ltr">${nis(g.amount)}</b></div><div><span>קוד</span><b dir="ltr">${g.code}</b></div><div><span>בתוקף עד</span><b>${ilDate(g.until)}</b></div></div>`;
   if (mine && g.status === 'pending') {
     const pay = PAY_NAME[meta.pay] || 'ביט / פייבוקס';
+    // קישור ישיר לאפליקציית התשלום (קבוצת גבייה של תום בביט/פייבוקס), אם הוגדר
+    const payUrl = (CONFIG.payLinks || {})[meta.pay] || '';
     H('כמעט שם!');
     box.innerHTML = `${giftCard(g, 'gv-pending')}
       <div class="gift-status wait" role="status"><span class="dot" aria-hidden="true"></span><span>ממתין שתום תאשר את התשלום</span></div>
       <div class="card gift-paybox">
         <p><span>מעבירים</span> <b dir="ltr">${nis(g.amount)}</b> <span>ב${pay}</span> <span>לתום גבע:</span></p>
+        ${payUrl ? `<a class="btn btn-gift" id="g-paylink" href="${esc(payUrl)}" target="_blank" rel="noopener">לתשלום ב${pay} – נפתח ישר באפליקציה</a><p class="hint">אם האפליקציה לא נפתחה – אפשר להעביר ידנית למספר:</p>` : ''}
         <div class="gift-num"><b dir="ltr">${CONFIG.phoneDisplay}</b><button type="button" class="btn btn-small btn-outline" id="g-copy">העתקת המספר</button></div>
         <p class="hint">כדאי לכתוב בהערה להעברה: שובר <span dir="ltr">${g.code}</span></p>
       </div>

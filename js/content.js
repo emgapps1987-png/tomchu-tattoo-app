@@ -14,6 +14,9 @@ export const CONFIG = {
   siteUrl: 'https://emgapps1987-png.github.io/tomchu-tattoo-app/',
   // שובר מתנה: סכום מינימלי בשקלים. התשלום בביט/פייבוקס למספר של תום (phoneDisplay)
   giftMin: 200,
+  // קישורי תשלום ישירים לשובר מתנה – קישור השיתוף של קבוצת הגבייה של תום בביט/פייבוקס.
+  // כשקישור ריק, הלקוח מקבל רק את המספר להעתקה.
+  payLinks: { bit: '', pbx: '' },
   address: 'קדרון 48, אלפי מנשה',
   waze: 'https://waze.com/ul?ll=32.1801435%2C35.0132961&navigate=yes',
   maps: 'https://maps.google.com?q=%D7%A7%D7%93%D7%A8%D7%95%D7%9F%2048%2C%20%D7%90%D7%9C%D7%A4%D7%99%20%D7%9E%D7%A0%D7%A9%D7%94',
