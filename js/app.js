@@ -113,13 +113,13 @@ views.home = () => `
   <div class="stack" style="gap:10px">
     <a class="btn btn-primary" href="#/contact">${icon.pen} רוצה קעקוע – בואו נדבר</a>
     <div class="grid2">
-      <a class="btn btn-tint tint-teal" href="#/health"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M12 10v6M9 13h6"/></svg></span>הצהרת בריאות</a>
-      <a class="btn btn-tint tint-green" href="https://wa.me/${CONFIG.whatsapp}" target="_blank" rel="noopener"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"/></svg></span>וואטסאפ לתום</a>
+      <a class="btn btn-tint tint-teal" href="#/health"><span class="chip" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 27s-10-6.2-10-13.2A5.6 5.6 0 0 1 16 10.4a5.6 5.6 0 0 1 10 3.4C26 20.8 16 27 16 27z"/><path d="M8.5 16.5h4l1.6-3 2.6 6 1.8-3h5"/></svg></span>הצהרת בריאות</a>
+      <a class="btn btn-tint tint-green" href="https://wa.me/${CONFIG.whatsapp}" target="_blank" rel="noopener"><span class="chip" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M6.5 25.5l1.4-4.6A10 10 0 1 1 11 24.2z"/><path d="M12.6 11.8c.4 3.6 3.4 7 7.4 7.6l1.2-1.6-2.2-1.2-1 .9c-1.4-.6-2.6-1.8-3.2-3.2l.9-1-1.2-2.2z"/></svg></span>וואטסאפ לתום</a>
     </div>
-    <a class="btn btn-tint tint-gift" href="#/gift"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="8" width="17" height="12" rx="2"/><path d="M3.5 12h17M12 8v12M12 8c-1.5-3-5-3.5-5-1.2C7 8 9.5 8 12 8zM12 8c1.5-3 5-3.5 5-1.2C17 8 14.5 8 12 8z"/></svg></span>שובר מתנה – לפנק מישהו בקעקוע</a>
-    <a class="btn btn-tint tint-sky" href="#/tryon"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="3"/><circle cx="12" cy="12" r="3.2"/></svg></span>איך זה ייראה עליי? – הדמיה על הגוף</a>
+    <a class="btn btn-tint tint-gift" href="#/gift"><span class="chip" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="6" y="13" width="20" height="13" rx="2"/><path d="M4.5 13h23M16 13v13"/><path d="M16 13c-2.2-4.5-7.5-5-7.5-1.6C8.5 13 12 13 16 13zM16 13c2.2-4.5 7.5-5 7.5-1.6 0 1.6-3.5 1.6-7.5 1.6z"/></svg></span>שובר מתנה – לפנק מישהו בקעקוע</a>
+    <a class="btn btn-tint tint-sky" href="#/tryon"><span class="chip" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="4.5" y="9" width="21" height="16" rx="3"/><path d="M10.5 9l1.6-3h5.8l1.6 3"/><circle cx="15" cy="17" r="4.5"/><path d="M13.6 16.6c.3-.9 1.6-.9 1.4.2.2-1.1 1.6-.9 1.4.2-.2.9-1.4 1.6-1.4 1.6s-1.6-.9-1.4-2z"/><path d="M27 4.5l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z"/></svg></span>איך זה ייראה עליי? – הדמיה על הגוף</a>
     ${CONFIG.sketchEnabled ? `<a class="btn btn-tint tint-rose" href="#/sketch"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.6L12 15l-1.8-4.4L5.5 9l4.7-1.4z"/><path d="M18 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></span>רעיון מקורי – סקיצה ב־AI</a>` : ''}
-    <a class="btn btn-tint tint-violet" href="#/ideas"><span class="chip" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>מחפשים השראה? רעיונות מפינטרסט</a>
+    <a class="btn btn-tint tint-violet" href="#/ideas"><span class="chip" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 4.5v2M7.5 8l1.4 1.4M24.5 8l-1.4 1.4M5 16h2M25 16h2"/><path d="M12 22.5c0-2-3-3.6-3-7.5a7 7 0 0 1 14 0c0 3.9-3 5.5-3 7.5z"/><path d="M12.5 25.5h7M14 28h4"/></svg></span>מחפשים השראה? רעיונות מפינטרסט</a>
   </div>
 
   ${promoCard()}
