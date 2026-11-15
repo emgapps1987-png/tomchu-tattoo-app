@@ -593,3 +593,10 @@ h2.barred::before { background: var(--iri-v); }
 .feathers span { display: none; }
 .feathers span:first-child { display: block; width: 136px; background: var(--iri) !important; }
 .fld:focus, .date-wrap:focus-within .date-show, .gift-amt:focus-within { border-color: #8240C4; box-shadow: 0 0 0 3px rgba(130,64,196,.25); }
+
+/* ===== כפתורי הקיצורים בדף הבית: כרטיסים עם אייקון גדול בגרדיאנט מעל הטקסט ===== */
+.home-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.home-tiles .btn-tint { flex-direction: column; justify-content: center; text-align: center; min-height: 116px; gap: 8px; padding: 14px 10px; line-height: 1.3; font-size: .95rem; }
+.home-tiles .btn-tint.tile-wide { grid-column: 1 / -1; flex-direction: row; min-height: 72px; gap: 14px; }
+.home-tiles .btn-tint .chip { width: auto !important; height: auto !important; background: none !important; border-radius: 0; }
+.home-tiles .btn-tint .chip svg { width: 40px; height: 40px; stroke: url(#tt-iri) !important; stroke-width: 1.5; }
