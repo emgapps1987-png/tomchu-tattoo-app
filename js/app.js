@@ -222,7 +222,7 @@ views.gallery = () => {
 };
 function galleryItems() {
   const list = state.galf === 'all' ? WORKS : WORKS.filter((w) => w.tag === state.galf);
-  return list.map((w, i) => `<li class="g-in" data-id="${w.id}" style="--i:${i}"><button type="button" class="thumb-btn is-loading" data-photo="${w.id}" aria-label="${esc(w.alt)} – להגדלה">${spinner(40)}<img src="${w.src}" alt="" loading="lazy"><span class="badge">${TAGS[w.tag]}</span></button></li>`).join('');
+  return list.map((w, i) => `<li class="g-in" data-id="${w.id}" style="--i:${i}"><button type="button" class="thumb-btn is-loading" data-photo="${w.id}" aria-label="${esc(w.alt)} – להגדלה">${spinner(40)}<img src="${w.src}" alt="" loading="lazy"><span class="badge">${w.badge || TAGS[w.tag]}</span></button></li>`).join('');
 }
 
 // ---------------------------------------------------------------------
@@ -1307,7 +1307,7 @@ function vShow(i, dir = 0) {
   vImg.onload = vImg.onerror = () => vBox.classList.remove('is-loading');
   vImg.src = w.src; vImg.alt = w.alt; if (vImg.complete && vImg.naturalWidth) vBox.classList.remove('is-loading');
   if (dir) vImg.animate([{ transform: `translateX(${dir * 60}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'cubic-bezier(.2,.8,.2,1)' });
-  $('#viewer-cap').textContent = w.alt; $('#viewer-tag').textContent = TAGS[w.tag];
+  $('#viewer-cap').textContent = w.alt; $('#viewer-tag').textContent = w.badge ? `${TAGS[w.tag]} · ${w.badge}` : TAGS[w.tag];
   $('#viewer-count').textContent = n > 1 ? `${V.i + 1} / ${n}` : '';
   $('#viewer-prev').hidden = $('#viewer-next').hidden = n < 2;
   [V.list[(V.i + 1) % n], V.list[(V.i - 1 + n) % n]].forEach((x) => { const im = new Image(); im.src = x.src; }); // טעינה מוקדמת של השכנות

@@ -30,7 +30,7 @@ export const CONFIG = {
   onesignalAppId: '7ab14748-0a18-438c-8c1e-0a5698cfc52d'
 };
 
-export const TAGS = { fine: 'קו עדין', sketch: 'סקיצה', color: 'צבע', studio: 'בסטודיו', place: 'הסטודיו שלי' };
+export const TAGS = { fine: 'קו עדין', sketch: 'סקיצה', color: 'צבע', studio: 'בסטודיו', place: 'הסטודיו שלי', ba: 'לפני ואחרי' };
 
 export const WORKS = [
   { id: 'w8', src: 'assets/img/works/work8.jpg', tag: 'fine', alt: 'פרח עדין בקווים זורמים' },
@@ -43,8 +43,8 @@ export const WORKS = [
   { id: 'w7', src: 'assets/img/works/work7.jpg', tag: 'fine', alt: 'עציץ קקטוס עדין על האמה' },
   { id: 'w3', src: 'assets/img/works/work3.jpg', tag: 'studio', alt: 'תום מקעקעת על פרק כף היד' },
   { id: 'w10', src: 'assets/img/works/work10.jpg', tag: 'studio', alt: 'רגע של עבודה בסטודיו' },
-  { id: 'w11', src: 'assets/img/works/work11.jpg', tag: 'color', alt: 'דג זהב צבעוני עם לבבות, אחרי חידוש' },
-  { id: 'w12', src: 'assets/img/works/work12.jpg', tag: 'color', alt: 'אותו דג לפני החידוש' },
+  { id: 'w11', src: 'assets/img/works/work11.jpg', tag: 'ba', badge: 'אחרי', alt: 'דג זהב צבעוני עם לבבות, אחרי החידוש' },
+  { id: 'w12', src: 'assets/img/works/work12.jpg', tag: 'ba', badge: 'לפני', alt: 'אותו דג לפני החידוש' },
   { id: 'w13', src: 'assets/img/works/work13.jpg', tag: 'fine', alt: 'פרחים תואמים על פרקי הידיים' },
   { id: 'w14', src: 'assets/img/works/work14.jpg', tag: 'fine', alt: 'ראש צבי בקו רציף אחד' },
   { id: 'w15', src: 'assets/img/works/work15.jpg', tag: 'fine', alt: 'משפט באנגלית בכתב יד' },
