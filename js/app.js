@@ -764,12 +764,13 @@ async function giftPage(code) {
       <div class="gift-status wait" role="status"><span class="dot" aria-hidden="true"></span><span>ממתין שתום תאשר את התשלום</span></div>
       <div class="card gift-paybox">
         <p><span>מעבירים</span> <b dir="ltr">${nis(g.amount)}</b> <span>ב${pay}</span> <span>לתום גבע:</span></p>
-        ${payUrl ? `<a class="btn btn-gift" id="g-paylink" href="${esc(payUrl)}" target="_blank" rel="noopener">לתשלום ב${pay} – נפתח ישר באפליקציה</a><p class="hint">אם האפליקציה לא נפתחה – אפשר להעביר ידנית למספר:</p>` : ''}
+        ${payUrl ? `<a class="btn btn-gift" id="g-paylink" href="${esc(payUrl)}" target="_blank" rel="noopener">לתשלום ב${pay}</a><p class="hint">אם האפליקציה לא נפתחה – אפשר להעביר ידנית למספר:</p>` : ''}
         <div class="gift-num"><b dir="ltr">${CONFIG.phoneDisplay}</b><button type="button" class="btn btn-small btn-outline" id="g-copy">העתקת המספר</button></div>
         <p class="hint">כדאי לכתוב בהערה להעברה: שובר <span dir="ltr">${g.code}</span></p>
       </div>
       <p class="muted">אחרי שתום רואה את ההעברה היא מאשרת, והשובר נפתח כאן. אפשר לסגור את האפליקציה ולחזור אחר כך – השובר שמור.</p>
       <button type="button" class="btn btn-outline" id="g-check">לבדוק אם השובר אושר</button>`;
+    $('#g-paylink')?.addEventListener('click', (e) => { e.preventDefault(); openExternal(payUrl); });
     $('#g-copy').addEventListener('click', async () => {
       try { await navigator.clipboard.writeText(CONFIG.phoneDisplay.replace(/-/g, '')); $('#g-copy').textContent = tr('הועתק ✓'); announce(tr('המספר הועתק')); } catch (e) { $('#g-copy').textContent = CONFIG.phoneDisplay; }
     });
