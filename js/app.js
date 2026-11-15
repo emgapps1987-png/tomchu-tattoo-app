@@ -163,7 +163,7 @@ views.home = () => `
     <div class="row">
       <a class="btn btn-small btn-waze" href="${CONFIG.waze}" target="_blank" rel="noopener">ניווט ב־Waze</a>
       <a class="btn btn-small btn-outline" style="border-color:#22A55B" href="tel:${CONFIG.phoneDisplay.replace(/-/g, '')}">חיוג</a>
-      <a class="btn btn-small btn-outline" style="border-color:#D41A5E" href="${CONFIG.instagram}" target="_blank" rel="noopener">אינסטגרם</a>
+      <a class="btn btn-small soc soc-ig" href="${CONFIG.instagram}" target="_blank" rel="noopener">אינסטגרם</a>
     </div>
   </div>
 </section>`;
@@ -217,7 +217,7 @@ views.gallery = () => {
     ${filters.map(([k, l]) => `<button type="button" class="filter" data-filter="${k}" aria-pressed="${state.galf === k}">${l}</button>`).join('')}
   </div>
   <ul class="gallery" id="gallery">${galleryItems()}</ul>
-  <a class="btn btn-outline" href="${CONFIG.instagram}" target="_blank" rel="noopener">עוד עבודות באינסטגרם</a>
+  <a class="btn soc soc-ig" href="${CONFIG.instagram}" target="_blank" rel="noopener">עוד עבודות באינסטגרם</a>
 </section>`;
 };
 function galleryItems() {
