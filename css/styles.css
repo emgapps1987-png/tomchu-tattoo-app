@@ -568,3 +568,24 @@ dialog.promo-dlg::backdrop { background: rgba(6,5,8,.72); }
 /* ===== ערכת צבעי הקוליברי: הכפתור הראשי בגרדיאנט של הלוגו ===== */
 .btn-primary { background: var(--iri); border: 0; color: #fff; font-weight: 800; box-shadow: 0 6px 22px -10px rgba(130,64,196,.8); }
 .btn-primary:active { transform: scale(.97); }
+
+/* ===== זרימת הצבעים של הקוליברי בכל האפליקציה ===== */
+:root { --iri-v: linear-gradient(180deg, #0F8A66 0%, #0E8E99 28%, #2A5FC4 52%, #7A36B3 76%, #C82464 100%); }
+/* מילוי מלא בגרדיאנט */
+.filter[aria-pressed="true"], .pill input:checked + span, .steps .num, .promo-badge, .skip {
+  background: var(--iri) !important; border-color: transparent !important; color: #fff !important; }
+.progress > div { background: var(--iri); }
+/* מסגרת בגרדיאנט לבחירות פעילות */
+.aplus[aria-pressed="true"], .chip-btn[aria-pressed="true"], .bell[aria-pressed="true"], .lang-opt[aria-pressed="true"] {
+  border-color: transparent; background: linear-gradient(var(--pri-soft), var(--pri-soft)) padding-box, var(--iri) border-box; }
+/* כפתורי הקיצורים בדף הבית – כולם עם מסגרת זורמת */
+.btn-tint { background: linear-gradient(var(--surface), var(--surface)) padding-box, var(--iri) border-box !important; border-color: transparent !important; color: var(--ink) !important; }
+.btn-tint .chip { background: var(--iri) !important; }
+/* פס הכותרות, המסגרות והקווים */
+h2.barred::before { background: var(--iri-v); }
+.thumb-btn.framed { border-color: transparent; background: var(--iri) border-box; }
+.art-card.topped { border-top: 1px solid var(--line); position: relative; overflow: hidden; }
+.art-card.topped::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--iri); }
+.feathers span { display: none; }
+.feathers span:first-child { display: block; width: 136px; background: var(--iri) !important; }
+.fld:focus, .date-wrap:focus-within .date-show, .gift-amt:focus-within { border-color: #8240C4; box-shadow: 0 0 0 3px rgba(130,64,196,.25); }
