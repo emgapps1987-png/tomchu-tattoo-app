@@ -13,12 +13,13 @@
 [data-theme="dark"] {
   --bg: #0B0A0D; --surface: #17141A; --ink: #F4EFF4; --muted: #B3A8B6;
   --line: #2C2530; --fline: #4A3F50;
-  --pri: #D97AD6; --onpri: #2A0628; --pri-soft: #34122F;
+  --pri: #E0457B; --onpri: #1A0610; --pri-soft: #3A1226;
   --acc: #2CC6A0; --acc-soft: #0F2E28;
-  --vio: #E7A8E5; --vio-soft: #251B33;
+  --vio: #4FD1C5; --vio-soft: #102A2A;
   --card: #211A26; --card-ink: #F4EFF4; --card-muted: #D9CFE0; --card-acc: #F0B8EE; --card-line: #4A3F50;
   --danger: #FF8A80; --danger-soft: #3A1513;
   --focus: #8AB4FF;
+  --iri: linear-gradient(120deg, #0F8A66 0%, #0E8E99 28%, #2A5FC4 52%, #7A36B3 76%, #C82464 100%);
   color-scheme: dark;
 }
 
@@ -269,10 +270,10 @@ body.intro-on { overflow: hidden; }
 .btn-tint { font-weight: 700; border-width: 1.5px; }
 .btn-tint .chip { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; }
 .btn-tint .chip svg { width: 15px; height: 15px; stroke-width: 2.4; }
-.tint-teal { background: #0E2C38; border-color: #1D93B5; color: #CDEFF9; }
-.tint-teal .chip { background: #1D93B5; }
-.tint-green { background: #10301F; border-color: #22A55B; color: #C9F2DA; }
-.tint-green .chip { background: #22A55B; }
+.tint-teal { background: #0C2A2D; border-color: #12A5B2; color: #CFF3F5; }
+.tint-teal .chip { background: #0E8E99; }
+.tint-green { background: #0B2A20; border-color: #13A076; color: #CBF2E3; }
+.tint-green .chip { background: #0F8A66; }
 .care-card { border-color: #5B4BC4; }
 .care-card::before { border-color: #5B4BC4; }
 .care-kicker { color: #7FE3C8; }
@@ -283,7 +284,7 @@ body.intro-on { overflow: hidden; }
 .how-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; color: #D9CFE0; }
 .how-list li { display: flex; align-items: center; gap: 10px; }
 .how-list .n { width: 26px; height: 26px; border-radius: 50%; color: #fff; font-weight: 700; font-size: 0.82rem; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.meet { border-color: #6B2140; }
+.meet { border: 1.5px solid transparent; background: linear-gradient(var(--surface), var(--surface)) padding-box, var(--iri) border-box; }
 h2.barred { display: flex; align-items: center; gap: 8px; }
 h2.barred::before { content: ""; width: 6px; height: 18px; border-radius: 3px; background: var(--bar); }
 .thumb-btn.framed { border: 2px solid var(--frame); }
@@ -294,7 +295,7 @@ h2.barred::before { content: ""; width: 6px; height: 18px; border-radius: 3px; b
 .tabbar a { color: var(--muted); }
 .tabbar .ti { display: inline-flex; padding: 3px 14px; border-radius: 999px; color: var(--tab); }
 .tabbar a[aria-current="page"] { color: var(--ink); }
-.tabbar a[aria-current="page"] .ti { background: #D97AD6; color: #2A0628; }
+.tabbar a[aria-current="page"] .ti { background: var(--iri); color: #fff; }
 
 /* ===== הוספה למסך הבית ===== */
 .install-tip { position: fixed; z-index: 30; inset-inline: 12px; bottom: calc(84px + env(safe-area-inset-bottom)); max-width: 536px; margin: 0 auto;
@@ -336,8 +337,8 @@ dialog.promo-dlg::backdrop { background: rgba(6,5,8,.72); }
 #push-t:focus { outline: none; }
 
 /* ===== רעיונות מפינטרסט ===== */
-.tint-violet { background: #221F45; border-color: #5B4BC4; color: #DCD7FF; }
-.tint-violet .chip { background: #5B4BC4; }
+.tint-violet { background: #22173A; border-color: #8240C4; color: #E6D8FA; }
+.tint-violet .chip { background: #7A36B3; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip-btn { min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1.5px solid var(--fline); background: var(--surface); color: var(--ink); cursor: pointer; }
 .chip-btn[aria-pressed="true"] { border-color: var(--pri); background: var(--pri-soft); font-weight: 700; }
@@ -347,8 +348,8 @@ dialog.promo-dlg::backdrop { background: rgba(6,5,8,.72); }
 .btn-pin { background: #E60023; color: #fff; }
 
 /* רעיון מקורי – סקיצה ב־AI */
-.tint-rose { background: #3A1430; border-color: #D97AD6; color: #FFD9F6; }
-.tint-rose .chip { background: #A0179C; }
+.tint-rose { background: #33101F; border-color: #DC2F6C; color: #FFD6E4; }
+.tint-rose .chip { background: #C82464; }
 .sk-frame { position: relative; width: 100%; aspect-ratio: 1; border-radius: 18px; overflow: hidden; border: 1px solid var(--line, #2C2530); background: #FBFAF7; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .sk-frame canvas { width: 100%; height: 100%; display: block; pointer-events: none; }
 .sk-badge { position: absolute; top: 10px; inset-inline-end: 10px; background: rgba(11,10,13,.8); color: #fff; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
@@ -361,8 +362,8 @@ dialog.promo-dlg::backdrop { background: rgba(6,5,8,.72); }
 .bell[aria-pressed="true"] .bell-dot { display: none; }
 
 /* הדמיה על הגוף */
-.tint-sky { background: #0E2A33; border-color: #4CC3E8; color: #D6F3FC; }
-.tint-sky .chip { background: #1B7F9E; }
+.tint-sky { background: #0F1D38; border-color: #2E6FD6; color: #D6E4FF; }
+.tint-sky .chip { background: #2A5FC4; }
 .try-pick { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1.5px dashed var(--fline); border-radius: 14px; background: var(--surface); cursor: pointer; min-height: 64px; }
 .try-pick:focus-within { outline: 2px solid var(--pri); outline-offset: 2px; }
 .try-pick.done { border-style: solid; border-color: #4ADE8C; }
@@ -465,7 +466,7 @@ dialog.promo-dlg::backdrop { background: rgba(6,5,8,.72); }
 .viewer-count { font-size: .85rem; color: #E9E2EC; font-variant-numeric: tabular-nums; margin-inline-start: auto; margin-inline-end: 10px; }
 .v-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 2; width: 48px; height: 48px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); background: rgba(12,10,14,.55); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(4px); }
 .v-nav svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-.v-nav:focus-visible { outline: 3px solid #D97AD6; outline-offset: 2px; }
+.v-nav:focus-visible { outline: 3px solid #E0457B; outline-offset: 2px; }
 .v-prev { inset-inline-start: 10px; }
 .v-next { inset-inline-end: 10px; }
 [dir="ltr"] .v-nav svg { transform: scaleX(-1); }
@@ -563,3 +564,7 @@ dialog.promo-dlg::backdrop { background: rgba(6,5,8,.72); }
 .gift-conf i { position: absolute; top: -12px; width: 8px; height: 13px; border-radius: 2px; animation: g-fall 1.8s ease-in forwards; }
 @keyframes g-fall { to { transform: translateY(105vh) rotate(600deg); opacity: .2; } }
 @media (prefers-reduced-motion: reduce) { .gv::before, .gv-reveal .gv, .gift-status.wait .dot { animation: none !important; } .gift-conf { display: none; } }
+
+/* ===== ערכת צבעי הקוליברי: הכפתור הראשי בגרדיאנט של הלוגו ===== */
+.btn-primary { background: var(--iri); border: 0; color: #fff; font-weight: 800; box-shadow: 0 6px 22px -10px rgba(130,64,196,.8); }
+.btn-primary:active { transform: scale(.97); }
