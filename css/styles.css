@@ -151,6 +151,25 @@ dialog#viewer::backdrop { background: rgba(8,6,10,0.9); }
 .facts b { font-family: Rubik, sans-serif; font-size: 1.6rem; color: var(--pri); line-height: 1.1; }
 .facts span { font-size: 0.8rem; }
 .pullquote { padding: 20px 18px; border-radius: 18px; background: var(--card); color: var(--card-ink); font-family: Rubik, sans-serif; font-weight: 500; font-size: 1.2rem; line-height: 1.4; text-align: center; }
+/* המשפט של תום – דיו במים מאחורי המילים */
+.ink-quote { position: relative; margin: 0; padding: 40px 22px 30px; border-radius: 22px; background: #0B0A0D; color: #fff; text-align: center; overflow: hidden; isolation: isolate; }
+.iq-ink { position: absolute; inset: 0; z-index: -1; }
+.iq-ink i { position: absolute; left: var(--x); top: var(--y); width: 52%; height: 46%; background: var(--c); filter: blur(30px); opacity: 0; mix-blend-mode: screen; border-radius: 58% 42% 63% 37% / 45% 58% 42% 55%; transform: scale(.4); transition: opacity 1.2s ease, transform 1.6s cubic-bezier(.16,.8,.3,1); }
+.iq-ink::after { content: ""; position: absolute; inset: 0; background: linear-gradient(#0B0A0D, transparent 24%, transparent 76%, #0B0A0D); }
+.ink-quote.in .iq-ink i { opacity: .68; transform: scale(1); animation: iq-drift 7s ease-in-out 1.4s infinite alternate; }
+.ink-quote.in .iq-ink i:nth-child(2n) { animation-direction: alternate-reverse; }
+@keyframes iq-drift { to { transform: translate(16px, -10px) rotate(24deg) scale(1.12); } }
+.ink-quote blockquote { margin: 0; }
+.ink-quote p { margin: 0; font-family: Rubik, sans-serif; font-weight: 800; font-size: 1.55rem; line-height: 1.3; text-shadow: 0 2px 18px rgba(0,0,0,.55); }
+.ink-quote .ln { display: block; opacity: 0; transform: translateY(12px); filter: blur(4px); transition: opacity .6s ease, transform .7s cubic-bezier(.2,.8,.2,1), filter .6s ease; }
+.ink-quote .ln + .ln { transition-delay: .35s; }
+.ink-quote.in .ln { opacity: 1; transform: none; filter: none; }
+.ink-quote figcaption { display: inline-flex; gap: 6px; align-items: center; margin-top: 14px; font-size: .9rem; color: #E7DDEA; opacity: 0; transition: opacity .6s ease .8s; }
+.ink-quote figcaption b { font-weight: 600; }
+.ink-quote.in figcaption { opacity: 1; }
+.ink-quote figcaption img { width: 26px; height: auto; }
+@media (prefers-reduced-motion: reduce) { .ink-quote .ln, .ink-quote figcaption, .iq-ink i { transition: none; opacity: 1; transform: none; filter: none; } .iq-ink i { opacity: .68; } .ink-quote.in .iq-ink i { animation: none; } }
+.big-text .ink-quote p { font-size: 1.8rem; }
 .chips { margin: 0; padding: 0; list-style: none; display: flex; gap: 8px; flex-wrap: wrap; }
 .chips li { padding: 6px 14px; border-radius: 999px; background: var(--pri-soft); }
 .chips li:nth-child(2) { background: var(--vio-soft); }

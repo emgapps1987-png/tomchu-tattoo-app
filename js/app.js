@@ -182,7 +182,11 @@ views.about = () => `
   </ul>
   <div class="stack"><h2>קצת עליי</h2><p>אני בת 38, נשואה לאייל ואמא לשלושה בנים מדהימים. התשוקה שלי לציור הובילה אותי ליצור על נייר, על נעליים ועל כל חפץ אפשרי. עבורי, האמנות היא דרך לביטוי עצמי ולבריחה לעולם שבו הכל אפשרי.</p></div>
   <div class="stack"><h2>למה קעקועים?</h2><p>קעקועים הם הרבה יותר מדיו על העור – הם סיפור חיים, זיכרון, ודרך לתת לנשמה לדבר. מאז הקעקוע הראשון שלי העולם הזה הפך לאהבה גדולה, וכל אחד מהקעקועים שלי מחזיק בתוכו רגע בזמן ותזכורת למסע שלי.</p></div>
-  <p class="pullquote">"אצלי אין חוקים –<br>רק חלומות שמתגשמים."</p>
+  <figure class="ink-quote">
+    <span class="iq-ink" aria-hidden="true"><i style="--x:-8%;--y:4%;--c:#D41A5E"></i><i style="--x:30%;--y:-12%;--c:#5B4BC4"></i><i style="--x:64%;--y:14%;--c:#1D93B5"></i><i style="--x:8%;--y:52%;--c:#22A55B"></i><i style="--x:54%;--y:56%;--c:#A0179C"></i></span>
+    <blockquote><p><span class="ln">"אצלי אין חוקים –</span><span class="ln">רק חלומות שמתגשמים."</span></p></blockquote>
+    <figcaption><img src="assets/img/logo-dark.png" alt="" width="26" height="29"><b>תום</b> · Tomchu Tattoo</figcaption>
+  </figure>
   <div class="stack">
     <img src="assets/img/works/work10.jpg" alt="מקרוב: היד של תום עם מכונת הקעקוע" loading="lazy" style="width:100%;height:170px;border-radius:18px;object-fit:cover;margin-bottom:6px">
     <h2>איך אני עובדת</h2>
@@ -542,6 +546,15 @@ views.accessibility = () => `
 const titles = { home: 'בית', about: 'תום', gallery: 'עבודות', care: 'מדריך ההחלמה', articles: 'מאמרים', article: 'מאמר', contact: 'פנייה לתום', health: 'הצהרת בריאות', done: 'תודה', accessibility: 'הצהרת נגישות', promo: 'מבצע החודש', ideas: 'רעיונות מפינטרסט', sketch: 'רעיון מקורי', tryon: 'הדמיה על הגוף', gift: 'שובר מתנה' };
 const tabOf = (name, param) => ({ about: 'about', accessibility: 'about', gallery: 'gallery', contact: 'contact', health: 'health', done: param === 'health' ? 'health' : 'contact' }[name] || 'home');
 
+// המשפט של תום: כתמי הדיו זזים והשורות עולות כשהמשפט נכנס למסך
+function watchInkQuotes(root) {
+  const qs = root.querySelectorAll('.ink-quote');
+  if (!qs.length) return;
+  if (!('IntersectionObserver' in window)) { qs.forEach((q) => q.classList.add('in')); return; }
+  const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.45 });
+  qs.forEach((q) => io.observe(q));
+}
+
 function render() {
   const [rawName, param] = location.hash.replace(/^#\/?/, '').split('/');
   const name = views[rawName] && (rawName !== 'sketch' || CONFIG.sketchEnabled) ? rawName : 'home';
@@ -555,6 +568,7 @@ function render() {
     if (scr) { [...scr.children].forEach((c, k) => c.style.setProperty('--k', Math.min(k, 8))); scr.classList.add('scr-in'); setTimeout(() => scr.classList.remove('scr-in'), 900); }
   }
   lastRoute = route; animNext = false;
+  watchInkQuotes(main);
   // הצהרת הבריאות והמאמרים – בעברית בלבד (מסמך משפטי / תוכן ארוך)
   const heOnly = LANG !== 'he' && (name === 'health' || name === 'articles' || name === 'article' || (name === 'done' && param === 'health'));
   if (heOnly) { const scr = main.firstElementChild; scr.setAttribute('data-i18n-skip', ''); scr.setAttribute('lang', 'he'); scr.setAttribute('dir', 'rtl');
