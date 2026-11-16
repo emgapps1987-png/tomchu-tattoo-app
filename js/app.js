@@ -1419,18 +1419,42 @@ function playIntro() {
     [30, 'c', 70, 190, G, 0.9], [100, 'c', 60, 170, V, 1.0], [165, 'c', 75, 200, T, 1.05],
     [225, 'c', 65, 180, P, 1.1], [290, 'c', 70, 190, M, 1.15], [345, 'c', 60, 170, T, 1.2]
   ];
-  $('#ib-ink').innerHTML = blooms.map((b, i) => `<span class="ib-arm" style="transform:rotate(${b[0]}deg)"><span class="ib-bloom ib-${b[1]}" style="width:${b[2]}px;height:${b[3]}px;background:${b[4]};border-radius:${shapes[i % 3]};animation-delay:${b[5]}s"></span></span>`).join('');
+  $('#ib-ink').innerHTML = blooms.map((b, i) => `<span class="ib-arm" style="transform:rotate(${b[0]}deg)"><span class="ib-bloom ib-${b[1]}" style="width:${b[2]}px;height:${b[3]}px;background:${b[4]};border-radius:${shapes[i % 3]};animation-delay:${(b[5] * 0.55).toFixed(2)}s"></span></span>`).join('');
   intro.hidden = false;
   document.body.classList.add('intro-on');
   let closed = false;
   const close = () => {
     if (closed) return; closed = true;
+    flyLogoHome(intro.querySelector('.ib-logo'));
     intro.classList.add('out');
     document.body.classList.remove('intro-on');
     setTimeout(() => intro.remove(), 600);
   };
   intro.addEventListener('click', close);
-  setTimeout(close, 3000);
+  setTimeout(close, 1800);
+}
+
+// הלוגו של הפתיחה עף ומתכווץ/גדל בדיוק למקום של הלוגו במסך הבית, ותוכן המסך עולה פנימה
+function flyLogoHome(logo) {
+  const target = $('#main .hero img');
+  if (!logo || !target || typeof logo.animate !== 'function') return;
+  const r = logo.getBoundingClientRect(), t = target.getBoundingClientRect();
+  if (!r.width || !t.width || t.bottom < 0 || t.top > innerHeight) return;
+  const fly = document.createElement('img');
+  fly.src = logo.src; fly.alt = ''; fly.className = 'ib-fly';
+  fly.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px`;
+  document.body.appendChild(fly);
+  logo.style.visibility = 'hidden';
+  target.style.visibility = 'hidden';
+  const done = () => { target.style.visibility = ''; fly.remove(); };
+  const a = fly.animate([{ transform: 'none' }, { transform: `translate(${t.left - r.left}px, ${t.top - r.top}px) scale(${t.width / r.width})` }], { duration: 650, easing: 'cubic-bezier(.65,0,.25,1)', fill: 'forwards' });
+  a.onfinish = done; setTimeout(done, 1000);
+  const scr = $('#main .screen');
+  if (scr) {
+    [...scr.children].forEach((c, k) => c.style.setProperty('--k', Math.min(k, 8)));
+    scr.classList.remove('scr-in'); void scr.offsetWidth; scr.classList.add('scr-in');
+    setTimeout(() => scr.classList.remove('scr-in'), 900);
+  }
 }
 
 // ---------------------------------------------------------------------
