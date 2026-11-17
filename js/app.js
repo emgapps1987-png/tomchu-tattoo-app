@@ -676,7 +676,7 @@ views.gift = (code) => {
       <div><span>שובר מתנה</span><b dir="ltr">${nis(amt)}</b></div>
       <div><span>למי</span><b data-i18n-skip>${esc(g.to)}</b></div>
       <div><span>שליחה</span><b>${g.send === 'me' ? 'אליי' : 'ישר בוואטסאפ'}</b></div>
-      <div><span>תוקף</span><b>שנה מהיום</b></div>
+      <div><span>תוקף</span><b>5 שנים מיום ההנפקה</b></div>
       <div class="tot"><span>לתשלום</span><b dir="ltr">${nis(amt)}</b></div>
     </div>
     <div class="stack" style="gap:8px"><span class="lbl" id="g-pay-l">איך משלמים?</span>

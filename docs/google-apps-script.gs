@@ -933,6 +933,7 @@ AI_JS_ +
 // =====================================================================
 var GIFT_SHEET = 'Tomchu – שוברי מתנה';
 var GIFT_MIN = 200;
+var GIFT_YEARS = 5; // לפי חוק הגנת הצרכן: שובר בסכום כספי בתוקף לפחות 5 שנים
 var GIFT_HEAD = ['קוד', 'נוצר', 'סטטוס', 'סכום', 'ממי', 'טלפון הקונה', 'למי', 'טלפון המקבל/ת', 'הקדשה', 'עיצוב', 'תשלום', 'אושר', 'מומש', 'בתוקף עד'];
 var GIFT_STATUS = { pending: 'ממתין לתשלום', active: 'פעיל', used: 'מומש', cancel: 'בוטל' };
 var GIFT_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -968,7 +969,7 @@ function giftCreate_(d) {
     var sh = giftSheet_(), code;
     var used = {}; if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues().forEach(function (r) { used[r[0]] = 1; });
     do { code = 'TT-'; for (var i = 0; i < 6; i++) code += GIFT_ABC.charAt(Math.floor(Math.random() * GIFT_ABC.length)); } while (used[code]);
-    var tz = 'Asia/Jerusalem', now = new Date(), until = new Date(now.getTime()); until.setFullYear(until.getFullYear() + 1);
+    var tz = 'Asia/Jerusalem', now = new Date(), until = new Date(now.getTime()); until.setFullYear(until.getFullYear() + GIFT_YEARS);
     var row = [code, Utilities.formatDate(now, tz, 'dd/MM/yyyy HH:mm'), GIFT_STATUS.pending, amount, cell_(from), "'" + phone, cell_(to), "'" + toPhone, cell_(msg), design, pay, '', '', Utilities.formatDate(until, tz, 'yyyy-MM-dd')];
     sh.appendRow(row);
   } finally { lock.releaseLock(); }
@@ -989,6 +990,21 @@ function giftCreate_(d) {
     name: 'Tomchu Tattoo – אפליקציה'
   });
   return json_({ ok: true, code: code, until: row[13] });
+}
+
+// פעם אחת בלבד, אחרי ההעתקה: להריץ מהעורך (Run) כדי להאריך שוברים שכבר הונפקו לתוקף של 5 שנים מיום ההנפקה.
+function giftExtendExistingTo5Years() {
+  var sh = giftSheet_(), n = sh.getLastRow(); if (n < 2) return 'אין שוברים';
+  var tz = 'Asia/Jerusalem', rows = sh.getRange(2, 1, n - 1, GIFT_HEAD.length).getValues(), changed = 0;
+  rows.forEach(function (v, i) {
+    var created = v[1] instanceof Date ? v[1] : (function (t) { var m = String(t).match(/^(\d{2})\/(\d{2})\/(\d{4})/); return m ? new Date(+m[3], +m[2] - 1, +m[1]) : null; })(v[1]);
+    if (!created) return;
+    var until = new Date(created.getTime()); until.setFullYear(until.getFullYear() + GIFT_YEARS);
+    var want = Utilities.formatDate(until, tz, 'yyyy-MM-dd');
+    var cur = v[13] instanceof Date ? Utilities.formatDate(v[13], tz, 'yyyy-MM-dd') : String(v[13]);
+    if (cur < want) { sh.getRange(i + 2, 14).setValue(want); changed++; }
+  });
+  return 'הוארכו ' + changed + ' שוברים';
 }
 
 function giftPublic_(code) {
