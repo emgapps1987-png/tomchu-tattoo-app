@@ -278,7 +278,6 @@ body.intro-on { overflow: hidden; }
 @keyframes ib-a { 0% { opacity: 0; transform: translate(-50%,-50%) translateY(0) scale(.05) } 20% { opacity: .95 } 100% { opacity: .85; transform: translate(-50%,-50%) translateY(-60px) scale(1) } }
 @keyframes ib-b { 0% { opacity: 0; transform: translate(-50%,-50%) translateY(0) scale(.05) } 20% { opacity: .95 } 100% { opacity: .8; transform: translate(-50%,-50%) translateY(-135px) scale(1) } }
 @keyframes ib-c { 0% { opacity: 0; transform: translate(-50%,-50%) translateY(0) scale(.05) rotate(0deg) } 25% { opacity: .9 } 100% { opacity: .75; transform: translate(-50%,-50%) translateY(-210px) scale(1) rotate(35deg) } }
-#intro .ib-disc { position: absolute; left: 50%; top: 50%; width: 200px; height: 200px; border-radius: 50%; background: #0B0A0D; box-shadow: 0 0 36px 20px #0B0A0D; transform: translate(-50%,-50%); opacity: 0; animation: ib-fade 1s ease-out .5s forwards; }
 /* הלוגו מופיע מיד, באותו מקום ובאותו גודל כמו במסך הפתיחה של אנדרואיד, וגדל מעט */
 #intro .ib-logo { position: absolute; left: 50%; top: 50%; width: 120px; height: auto; transform: translate(-50%,-50%); animation: ib-grow 1.4s cubic-bezier(.2,.8,.2,1) .15s forwards; }
 @keyframes ib-fade { to { opacity: 1 } }
