@@ -140,3 +140,22 @@ function reportHtml_(label, w, err, g) {
   h += '<p style="margin-top:24px;font-size:12px;color:#888">נתוני החיפוש בגוגל מגיעים במייל נפרד מ־Google Search Console. הנתונים כאן כלליים ולא מזהים מבקרים.</p></div>';
   return h;
 }
+
+// שליחת הקישור הפרטי לדף ניהול המבצעים גם לאייל (מריצים פעם אחת מהעורך)
+function sendPromoAdminLinkToEyal() {
+  var key = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  if (!key) throw new Error('אין עדיין מפתח ניהול – להריץ קודם setupPromoAdmin');
+  var url = ScriptApp.getService().getUrl() + '?admin=' + key;
+  MailApp.sendEmail({
+    to: 'pandy2507@gmail.com',
+    subject: 'הקישור לניהול "מבצע החודש" – Tomchu Tattoo',
+    htmlBody: '<div dir="rtl" style="font-family:Arial;font-size:15px;line-height:1.7">' +
+      '<p>זה הקישור הפרטי לעדכון מבצע החודש. מבצע שמפרסמים כאן מופיע אוטומטית גם באפליקציה וגם באתר:</p>' +
+      '<p><a href="' + url + '">לפתיחת דף המבצעים</a></p>' +
+      '<p><b>להעלאת מבצע:</b> ממלאים כותרת, טקסט קצר ותאריך תוקף (אפשר גם תמונה) ולוחצים שמירה.<br>' +
+      '<b>להורדת מבצע:</b> לוחצים "סיום המבצע". מבצע יורד לבד גם כשעובר תאריך התוקף.</p>' +
+      '<p>לא לשתף את הקישור – מי שיש לו אותו יכול לשנות את המבצע.</p></div>',
+    name: 'Tomchu Tattoo – אתר ואפליקציה'
+  });
+  return url;
+}
