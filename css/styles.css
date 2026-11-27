@@ -620,3 +620,8 @@ h2.barred::before { background: var(--iri-v); }
 .home-tiles .btn-tint.tile-wide { grid-column: 1 / -1; flex-direction: row; min-height: 72px; gap: 14px; }
 .home-tiles .btn-tint .chip { width: auto !important; height: auto !important; background: none !important; border-radius: 0; }
 .home-tiles .btn-tint .chip svg { width: 40px; height: 40px; stroke: url(#tt-iri) !important; stroke-width: 1.5; }
+
+/* קישורי טקסט: טלפון ומייל לא נשברים באמצע, ושטח לחיצה של 44 פיקסלים לפחות */
+.contact-link { white-space: nowrap; unicode-bidi: isolate; display: inline-block; padding-block: 12px; margin-block: -12px; }
+.legal-links { text-align: center; }
+.legal-links a { display: inline-block; padding: 13px 6px; }

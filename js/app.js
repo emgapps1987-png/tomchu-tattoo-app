@@ -209,7 +209,7 @@ views.about = () => `
     <a class="btn btn-small soc soc-fb" href="${CONFIG.facebook}" target="_blank" rel="noopener">Facebook</a>
     <a class="btn btn-small soc soc-tt" href="${CONFIG.tiktok}" target="_blank" rel="noopener">TikTok</a>
   </div>
-  <p style="text-align:center"><a href="#/accessibility">הצהרת נגישות</a> · <a href="privacy.html">מדיניות פרטיות</a></p>
+  <p class="legal-links"><a href="#/accessibility">הצהרת נגישות</a> · <a href="privacy.html">מדיניות פרטיות</a></p>
 </section>`;
 
 views.gallery = () => {
@@ -534,7 +534,7 @@ views.accessibility = () => `
     </ul>
   </div>
   <div class="stack"><h2>נתקלתם בבעיה?</h2>
-    <p>נשמח לשמוע ולתקן. רכזת הנגישות: תום גבע · <a href="tel:${CONFIG.phoneDisplay.replace(/-/g, '')}">${CONFIG.phoneDisplay}</a> · <a href="mailto:${CONFIG.email}">${CONFIG.email}</a></p>
+    <p>נשמח לשמוע ולתקן. רכזת הנגישות: תום גבע · <a class="contact-link" dir="ltr" href="tel:${CONFIG.phoneDisplay.replace(/-/g, '')}">${CONFIG.phoneDisplay}</a> · <a class="contact-link" dir="ltr" href="mailto:${CONFIG.email}">${CONFIG.email}</a></p>
   </div>
   <div class="stack"><h2>נגישות הסטודיו</h2><p class="muted">צריכים התאמה כלשהי להגעה לסטודיו או במהלך הקעקוע? ספרו לתום מראש בטלפון או בוואטסאפ, ונדאג שיהיה לכם נוח.</p></div>
   <p class="hint">עודכן לאחרונה: נובמבר 2026</p>
