@@ -601,6 +601,7 @@ function careIcs_(start) {
 function doGet(e) {
   var p = (e && e.parameter) || {};
   if (p.action === 'promo') return json_({ ok: true, promo: activePromo_() });
+  if (p.action === 'dreidel') return dreidel_(String(p.tel || ''));
   if (p.action === 'translate') {
     var q = String(p.q || '').slice(0, 200);
     if (!q) return json_({ ok: false });
@@ -1029,4 +1030,33 @@ function giftAdmin_(code, act, admin) {
   var v = giftFind_(code).v;
   var msg = { ok: '✔ השובר הופעל! ', used: '✔ השובר סומן כמומש. ', cancel: 'השובר בוטל. ' }[act] || '';
   return page(msg + '<br><b dir="ltr">' + code + '</b> · ₪' + v[3] + ' · מ' + v[4] + ' ל' + v[6] + '<br>סטטוס: <b>' + v[2] + '</b>');
+}
+
+
+// =====================================================================
+// סביבון חנוכה (אתר): סיבוב אחד לכל טלפון, נשמר בגיליון "סביבון חנוכה"
+// =====================================================================
+var DREIDEL = { from: '2026-12-04', to: '2026-12-12', weights: [45, 30, 20, 5],
+  prizes: ['נ · 20% הנחה', 'ג · 30% הנחה', 'ה · 40% הנחה', 'פ · קעקוע שני מתנה'], sheet: 'סביבון חנוכה' };
+function dreidel_(tel) {
+  tel = tel.replace(/\D/g, '');
+  if (!/^05\d{8}$/.test(tel)) return json_({ ok: false, error: 'tel' });
+  var today = Utilities.formatDate(new Date(), 'Asia/Jerusalem', 'yyyy-MM-dd');
+  if (today < DREIDEL.from || today > DREIDEL.to) return json_({ ok: false, closed: true });
+  var lock = LockService.getScriptLock(); lock.waitLock(10000);
+  try {
+    var files = DriveApp.getFilesByType(MimeType.GOOGLE_SHEETS), file = null;
+    while (files.hasNext()) { var f = files.next(); if (f.getName() === DREIDEL.sheet && !f.isTrashed()) { file = f; break; } }
+    var ss = file ? SpreadsheetApp.open(file) : SpreadsheetApp.create(DREIDEL.sheet), sh = ss.getSheets()[0];
+    if (sh.getLastRow() === 0) { sh.setRightToLeft(true); sh.setFrozenRows(1); sh.appendRow(['טלפון', 'זכייה', 'קוד', 'תאריך', 'מומש?']); sh.getRange(1, 1, 1, 5).setFontWeight('bold'); }
+    var n = sh.getLastRow();
+    if (n > 1) {
+      var rows = sh.getRange(2, 1, n - 1, 3).getValues();
+      for (var i = 0; i < rows.length; i++) if (String(rows[i][0]).replace(/\D/g, '').replace(/^5/, '05') === tel) return json_({ ok: true, k: Number(rows[i][2]), again: true });
+    }
+    var r = Math.random() * 100, k = 0;
+    for (var j = 0; j < 4; j++) { if ((r -= DREIDEL.weights[j]) < 0) { k = j; break; } }
+    sh.appendRow(["'" + tel, DREIDEL.prizes[k], k, today, '']);
+    return json_({ ok: true, k: k, again: false });
+  } finally { lock.releaseLock(); }
 }

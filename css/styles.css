@@ -620,3 +620,40 @@ h2.barred::before { background: var(--iri-v); }
 .home-tiles .btn-tint.tile-wide { grid-column: 1 / -1; flex-direction: row; min-height: 72px; gap: 14px; }
 .home-tiles .btn-tint .chip { width: auto !important; height: auto !important; background: none !important; border-radius: 0; }
 .home-tiles .btn-tint .chip svg { width: 40px; height: 40px; stroke: url(#tt-iri) !important; stroke-width: 1.5; }
+
+/* ---------- Hanukkah dreidel ---------- */
+.dr-bar{position:relative;z-index:30;background:linear-gradient(90deg,#0F8A66,#2A5FC4,#7A36B3,#C82464);color:#fff;font:600 .95rem Rubik,Heebo,Arial,sans-serif}
+.dr-bar .wrap{display:flex;align-items:center;justify-content:center;gap:12px;padding:9px 16px;text-align:center;flex-wrap:wrap}
+.dr-bar button{border:0;border-radius:999px;padding:7px 18px;background:#fff;color:#2A1A3A;font:800 .9rem Rubik,Heebo,Arial,sans-serif;cursor:pointer}
+.dr-m{position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:rgba(5,4,8,.74);backdrop-filter:blur(6px);padding:14px;overflow:auto}
+.dr-m[hidden]{display:none}
+.dr-box{position:relative;width:min(100%,420px);padding:2px;border-radius:26px;background:var(--iri);box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.dr-in{position:relative;border-radius:24px;background:radial-gradient(120% 80% at 50% 0%,#2a1838,#0E0C12 60%);color:#F4F1F7;padding:24px 20px 22px;text-align:center;overflow:hidden}
+.dr-in>div{display:grid;gap:12px}
+.dr-x{position:absolute;top:12px;left:12px;z-index:2;width:36px;height:36px;border-radius:50%;border:0;background:rgba(255,255,255,.08);color:#fff;font-size:1.1rem;cursor:pointer}
+.dr-in h2{margin:0;font:800 1.45rem/1.2 Rubik,Heebo,Arial,sans-serif}.dr-in p{margin:0;color:#B9B2C4;line-height:1.55}
+.dr-prz{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;font-size:.78rem;color:#B9B2C4}.dr-prz b{display:block;font:800 1.2rem Rubik,Heebo,Arial,sans-serif;color:#fff}
+.dr-stage{height:300px;display:grid;place-items:center}.dr-stage canvas{width:340px;height:300px;max-width:100%}
+.dr-in label{font-weight:700}
+.dr-in input{min-height:50px;border-radius:14px;border:1px solid rgba(255,255,255,.16);background:#0B0A0D;color:#fff;padding:0 14px;font:600 1.05rem Rubik,Heebo,Arial,sans-serif;text-align:center;direction:ltr}
+.dr-in .btn{justify-content:center}
+.dr-err{color:#FF7EB3!important;font-size:.85rem;min-height:1em}
+.dr-fine{font-size:.72rem}
+.dr-rk{font-weight:700;color:#fff!important}
+.dr-res{font:900 2.2rem/1.1 Rubik,Heebo,Arial,sans-serif}.dr-res span{background:var(--iri);-webkit-background-clip:text;background-clip:text;color:transparent}
+.dr-cf{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.dr-cf i{position:absolute;top:-10px;width:8px;height:14px;border-radius:2px;animation:drfall 1.8s ease-in forwards}
+@keyframes drfall{to{transform:translateY(600px) rotate(540deg);opacity:0}}
+
+.dr-in>div[hidden]{display:none}
+.dr-in h2{padding:0 34px}
+@media (max-height:760px){.dr-stage{height:240px}.dr-stage canvas{height:240px;width:272px}.dr-in{padding:18px 16px}}
+
+.dr-card{display:flex;align-items:center;gap:14px;width:100%;padding:16px;border:0;border-radius:20px;background:var(--iri);color:#fff;text-align:start;cursor:pointer;font-family:inherit;box-shadow:0 10px 30px rgba(122,54,179,.35)}
+.dr-card .dr-ic{font-size:2rem;line-height:1}.dr-card b{display:block;font-size:1.1rem}.dr-card small{opacity:.9}
+.dr-chip{display:flex;gap:10px;align-items:center;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);font-weight:700}
+.dr-in .btn{width:100%}
+
+.dr-in .btn-iri{display:flex;align-items:center;min-height:52px;border:0;border-radius:999px;background:var(--iri);color:#fff;font-weight:800;font-size:1.05rem;text-decoration:none;cursor:pointer}
+.dr-in .btn-iri:disabled{opacity:.7}
+.dr-in .btn-ghost{display:flex;align-items:center;min-height:48px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff;font-weight:700;font-size:1rem;cursor:pointer}
