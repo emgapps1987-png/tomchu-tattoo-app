@@ -633,11 +633,13 @@ function setupPromoAdmin() {
   var url = ScriptApp.getService().getUrl() + '?admin=' + key;
   MailApp.sendEmail({
     to: EMAIL_TO,
-    subject: 'הקישור לדף "מבצע החודש" של האפליקציה',
-    htmlBody: '<div dir="rtl" style="font-family:Arial;font-size:15px">' +
-      '<p>זה הקישור הפרטי שלך לעדכון מבצע החודש באפליקציה:</p>' +
-      '<p><a href="' + url + '">לפתיחת דף המבצעים</a></p>' +
-      '<p>כדאי לשמור אותו במסך הבית של הטלפון. לא לשתף אותו – מי שיש לו את הקישור יכול לשנות את המבצע.</p></div>',
+    subject: 'הקישור לדף הניהול של האפליקציה – שוברי מתנה ומבצע החודש',
+    htmlBody: '<div dir="rtl" style="font-family:Arial;font-size:15px;line-height:1.6">' +
+      '<p>היי תום,</p><p>זה הקישור הפרטי שלך לדף הניהול של האפליקציה:</p>' +
+      '<p><a href="' + url + '" style="display:inline-block;background:#A0179C;color:#fff;text-decoration:none;font-weight:bold;padding:12px 20px;border-radius:10px">לפתיחת דף הניהול</a></p>' +
+      '<p><b>🎁 שוברי מתנה:</b> כשמישהו קונה שובר, הוא שולח לך וואטסאפ "שילמתי… שובר TT-…". בודקים שהכסף הגיע בביט/פייבוקס, נכנסים לדף ולוחצים "התשלום התקבל" – והשובר נפתח אצלו. ביום הקעקוע לוחצים "סימון שמומש".</p>' +
+      '<p><b>מבצע החודש:</b> באותו דף, למטה.</p>' +
+      '<p><b>טיפ:</b> לפתוח את הקישור בטלפון ולבחור "הוספה למסך הבית", כדי שיהיה תמיד בהישג יד. לא לשתף אותו – מי שיש לו את הקישור יכול לאשר שוברים ולשנות מבצעים.</p></div>',
     name: 'Tomchu Tattoo – אפליקציה'
   });
   Logger.log(url);
