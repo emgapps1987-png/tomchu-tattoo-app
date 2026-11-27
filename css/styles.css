@@ -552,6 +552,8 @@ dialog.promo-dlg::backdrop { background: rgba(6,5,8,.72); }
 [data-theme="light"] .gift-status.ok { background: #E3F7EC; color: #0E5A35; border-color: #9ED9B8; }
 @keyframes g-pulse { 50% { opacity: .3; } }
 .gift-paybox { display: flex; flex-direction: column; gap: 10px; }
+.pay-step { display: block; font-weight: 800; font-size: .95rem; color: var(--vio); }
+.btn-wa { background: #1FA855; color: #fff; border: 0; }
 .gift-num { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .gift-num b { font: 800 1.5rem Rubik, sans-serif; }
 .gift-loading { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 60px 0; }
