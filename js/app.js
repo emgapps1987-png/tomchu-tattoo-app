@@ -1974,7 +1974,9 @@ binders.tryon = () => {
 
   // שמירה ושליחה
   const exportBlob = () => new Promise((ok) => {
-    const c = document.createElement('canvas'); c.width = tryState.body.width; c.height = tryState.body.height;
+    // מגבילים ל־1800 פיקסלים בצד הארוך: תמונה ממצלמה (4000+) הייתה לוקחת שניות ארוכות בלי שום חיווי
+    const bw = tryState.body.width, bh = tryState.body.height, sc = Math.min(1, 1800 / Math.max(bw, bh));
+    const c = document.createElement('canvas'); c.width = Math.round(bw * sc); c.height = Math.round(bh * sc);
     paintTry(c, true); c.toBlob((b) => ok(b), 'image/jpeg', 0.9);
   });
   const fileOf = (b) => new File([b], 'tomchu-tattoo-preview.jpg', { type: 'image/jpeg' });
@@ -1999,18 +2001,34 @@ binders.tryon = () => {
       return true;
     } catch (e) { return /cancel/i.test(String(e && e.message)) ? true : false; }
   };
+  const flash = (msg) => { let box = $('#try-sent'); if (!box) { box = document.createElement('p'); box.id = 'try-sent'; box.className = 'muted'; box.setAttribute('role', 'status'); box.style.cssText = 'margin:0;text-align:center'; $('#try-save')?.insertAdjacentElement('afterend', box); } box.textContent = msg; };
+  const tick = () => new Promise((r) => setTimeout(r, 30)); // נותן לספינר להופיע לפני העבודה הכבדה
+  // אנדרואיד: שמירה ישירה לגלריה (Pictures/Tomchu Tattoo) בלי חלון שיתוף
+  const saveToGallery = async (b) => {
+    const P = window.Capacitor && window.Capacitor.Plugins; if (!isNative || !P || !P.Filesystem || !P.WaShare || !P.WaShare.saveImage) return false;
+    try {
+      const data = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.onerror = no; r.readAsDataURL(b); });
+      const f = await P.Filesystem.writeFile({ path: 'tomchu-tattoo-preview.jpg', data, directory: 'CACHE' });
+      await P.WaShare.saveImage({ path: f.uri, name: `Tomchu-${Date.now()}.jpg` });
+      return true;
+    } catch (e) { return false; }
+  };
   $('#try-save')?.addEventListener('click', async () => {
-    const b = await exportBlob(); if (!b) return showErr('לא הצלחנו לשמור. נסו שוב.');
+    const btn = $('#try-save'); if (btn.disabled) return; const undo = busy(btn, 'שומר…'); await tick();
+    const b = await exportBlob(); if (!b) { undo(); return showErr('לא הצלחנו לשמור. נסו שוב.'); }
+    if (await saveToGallery(b)) { undo(); flash('התמונה נשמרה בגלריה ✓'); return; }
+    undo();
     const f = fileOf(b);
     if (await nativeShare(b)) return;
     if (canShare(f)) { try { await navigator.share({ files: [f] }); } catch (e) {} }
     else if (isNative) showErr('כדי לשמור: צלמו את המסך (כפתור ההפעלה + הנמכת עוצמה).');
-    else { download(b); announce('התמונה נשמרה'); }
+    else { download(b); flash('התמונה נשמרה ✓'); }
   });
   $('#try-send')?.addEventListener('click', async () => {
-    const b = await exportBlob(); if (!b) return showErr('לא הצלחנו לשמור. נסו שוב.');
+    // חיווי מיידי ונעילת הכפתור – כדי שלא ילחצו שוב ושוב
+    const btn = $('#try-send'); if (btn.disabled) return; const undo = busy(btn, 'שולח…'); await tick();
+    const b = await exportBlob(); if (!b) { undo(); return showErr('לא הצלחנו לשמור. נסו שוב.'); }
     // תמיד: ההדמיה נשלחת קודם לתום במייל (עם מספר הדמיה)
-    const btn = $('#try-send'); const undo = busy(btn, 'שולח…');
     const ref = photoRef();
     const ok = await sendPhotosToTom([await shrinkImage(b, 1400, 0.82)], { what: 'tryon', ref });
     undo();
@@ -2023,8 +2041,7 @@ binders.tryon = () => {
     // אייפון ואתר: הוואטסאפ נפתח בשיחה עם תום (התמונה כבר אצלה במייל)
     if (!ok) { download(b); showErr('התמונה נשמרה במכשיר. עכשיו נפתח וואטסאפ – צרפו אותה להודעה.'); setTimeout(() => goWa(waLink('היי תום, ככה דמיינתי את הקעקוע 🙂')), 1800); return; }
     const link = waLink(`היי תום, שלחתי לך הדמיה של הקעקוע מהאפליקציה – מספר #${ref} 🙂`);
-    let box = $('#try-sent'); if (!box) { box = document.createElement('p'); box.id = 'try-sent'; box.className = 'muted'; box.setAttribute('role', 'status'); box.style.cssText = 'margin:0;text-align:center'; btn.insertAdjacentElement('afterend', box); }
-    box.textContent = `ההדמיה נשלחה ✓ (מספר #${ref}) · פותחים את הוואטסאפ של תום…`;
+    flash(`ההדמיה נשלחה ✓ (מספר #${ref}) · פותחים את הוואטסאפ של תום…`);
     goWa(link);
   });
 
