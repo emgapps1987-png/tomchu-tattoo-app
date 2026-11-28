@@ -13,7 +13,7 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 29; // 29: שוברים – אישור בדף הניהול במקום מייל · 28: שוברי מתנה · 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
+var SCRIPT_VERSION = 30; // 30: סביבון חנוכה (action=dreidel) · 29: שוברים – אישור בדף הניהול במקום מייל · 28: שוברי מתנה · 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbx8Fdjy-R1BFsbZRwoc3WbTqR8FzpORe76ot9fpKa5OLgF-ReHm8WbvalKR26HcqtckBw/exec';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
