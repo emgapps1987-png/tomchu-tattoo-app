@@ -1981,6 +1981,15 @@ binders.tryon = () => {
   const canShare = (f) => { try { return !!(navigator.canShare && navigator.canShare({ files: [f] })); } catch (e) { return false; } };
   const download = (b) => { const u = URL.createObjectURL(b), a = document.createElement('a'); a.href = u; a.download = 'tomchu-tattoo-preview.jpg'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); };
   // באפליקציית אנדרואיד: שומרים קובץ זמני ופותחים את חלון השיתוף של הטלפון (וואטסאפ, גלריה...)
+  const waShareImage = async (b, text) => {
+    const P = window.Capacitor && window.Capacitor.Plugins; if (!P || !P.Filesystem || !P.WaShare) return false;
+    try {
+      const data = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.onerror = no; r.readAsDataURL(b); });
+      const f = await P.Filesystem.writeFile({ path: 'tomchu-tattoo-preview.jpg', data, directory: 'CACHE' });
+      await P.WaShare.share({ path: f.uri, phone: CONFIG.whatsapp, text });
+      return true;
+    } catch (e) { return false; }
+  };
   const nativeShare = async (b, text) => {
     const P = window.Capacitor && window.Capacitor.Plugins; if (!isNative || !P || !P.Filesystem || !P.Share) return false;
     try {
@@ -2000,12 +2009,18 @@ binders.tryon = () => {
   });
   $('#try-send')?.addEventListener('click', async () => {
     const b = await exportBlob(); if (!b) return showErr('לא הצלחנו לשמור. נסו שוב.');
-    if (isNative && await nativeShare(b, 'היי תום, ככה דמיינתי את הקעקוע – מצרפ/ת הדמיה מהאפליקציה 🙂')) return;
-    // אייפון ואתר: ההדמיה נשלחת לתום במייל, והוואטסאפ נפתח ישר בשיחה איתה
+    // תמיד: ההדמיה נשלחת קודם לתום במייל (עם מספר הדמיה)
     const btn = $('#try-send'); const undo = busy(btn, 'שולח…');
     const ref = photoRef();
     const ok = await sendPhotosToTom([await shrinkImage(b, 1400, 0.82)], { what: 'tryon', ref });
     undo();
+    // אנדרואיד: נפתח ישר הצ'אט של תום בוואטסאפ, עם התמונה מצורפת
+    if (isNative) {
+      const msg = `היי תום, ככה דמיינתי את הקעקוע 🙂 (הדמיה #${ref})`;
+      if (await waShareImage(b, msg)) return;
+      if (await nativeShare(b, msg)) return;
+    }
+    // אייפון ואתר: הוואטסאפ נפתח בשיחה עם תום (התמונה כבר אצלה במייל)
     if (!ok) { download(b); showErr('התמונה נשמרה במכשיר. עכשיו נפתח וואטסאפ – צרפו אותה להודעה.'); setTimeout(() => goWa(waLink('היי תום, ככה דמיינתי את הקעקוע 🙂')), 1800); return; }
     const link = waLink(`היי תום, שלחתי לך הדמיה של הקעקוע מהאפליקציה – מספר #${ref} 🙂`);
     let box = $('#try-sent'); if (!box) { box = document.createElement('p'); box.id = 'try-sent'; box.className = 'muted'; box.setAttribute('role', 'status'); box.style.cssText = 'margin:0;text-align:center'; btn.insertAdjacentElement('afterend', box); }
