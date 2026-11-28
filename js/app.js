@@ -1880,9 +1880,10 @@ views.tryon = () => `
     ${tryPick('try-body', 'תמונה של המקום על הגוף', 'צילום ישר, באור טוב', !!tryState.body)}
     ${tryPick('try-art', 'הסקיצה או הציור', 'הכי טוב: קווים כהים על רקע בהיר', !!tryState.src)}
   </div>
+  ${tryState.body || tryState.src ? `<button type="button" class="try-reset" id="try-reset"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg>איפוס · להתחיל מחדש</button>` : ''}
   <p class="sk-err" id="try-err" role="alert" hidden></p>
   <div id="try-stage-wrap" ${tryState.body ? '' : 'hidden'}>
-    <div class="try-stage"><canvas id="try-cv" role="img" aria-label="הדמיה של הקעקוע על הגוף"></canvas></div>
+    <div class="try-stage${tryState.src ? ' live' : ''}"><canvas id="try-cv" role="img" aria-label="הדמיה של הקעקוע על הגוף"></canvas></div>
     <p class="muted" style="text-align:center;font-size:.85rem;margin:8px 0 0" id="try-hint">${tryState.src ? 'גוררים באצבע כדי להזיז · שתי אצבעות להגדלה ולסיבוב' : 'עכשיו מעלים את הסקיצה'}</p>
   </div>
   <div class="card stack" id="try-tools" style="gap:14px" ${tryState.body && tryState.src ? '' : 'hidden'}>
@@ -1916,9 +1917,13 @@ binders.tryon = () => {
     try { tryState.src = toCanvas(await loadImageFile(e.target.files[0]), 900); makeInk(); showErr(''); refresh(); }
     catch (x) { showErr('לא הצלחנו לפתוח את הסקיצה. נסו תמונה אחרת.'); } finally { off(); }
   });
+  $('#try-reset')?.addEventListener('click', () => {
+    Object.assign(tryState, { body: null, src: null, ink: null, x: 0.5, y: 0.5, size: 0.45, rot: 0, clean: 200, fade: 0.85, jump: false });
+    render(); setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 30); announce('ההדמיה אופסה');
+  });
   if (!tryState.body) return;
   fit();
-  if (tryState.jump) { tryState.jump = false; setTimeout(() => $('#try-stage-wrap')?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 60); }
+  if (tryState.jump) { tryState.jump = false; if (tryState.src) setTimeout(() => $('#try-stage-wrap')?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 60); }
 
   // מחוונים
   const on = (id, fn) => $(id)?.addEventListener('input', (e) => { fn(Number(e.target.value)); paintTry(cv); });
