@@ -13,7 +13,8 @@
  * הכל נשאר בחשבון הגוגל של תום. הוראות התקנה: docs/google-apps-script.md
  */
 
-var SCRIPT_VERSION = 30; // 30: סביבון חנוכה (action=dreidel) · 29: שוברים – אישור בדף הניהול במקום מייל · 28: שוברי מתנה · 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
+var SCRIPT_VERSION = 31; // 31: הגנה מפני שליחות מזויפות (טלפון מומצא, מכסה לטלפון, מלכודת רובוטים)
+// 30: סביבון חנוכה (action=dreidel) · 29: שוברים – אישור בדף הניהול במקום מייל · 28: שוברי מתנה · 2: שדות נוספים · 3: התרעות חריגים · 4: מבצע החודש · 5: התראות OneSignal · 6: תרגום לרעיונות מפינטרסט · 7: חיזוק אבטחה · 8: עזרה בכתיבה עם Gemini · 9: כתיבה ישירה עם Gemini API · 10: בחירת מודל אוטומטית · 11: Gemini מהיר · 12: flash-lite · 13: ניסיונות חוזרים · 14: רעיון מקורי (סקיצה ב־AI)
 var EMAIL_TO = 'TomchuTattoo@gmail.com';
 var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbx8Fdjy-R1BFsbZRwoc3WbTqR8FzpORe76ot9fpKa5OLgF-ReHm8WbvalKR26HcqtckBw/exec';
 var FOLDER_NAME = 'Tomchu – הצהרות בריאות';
@@ -414,6 +415,23 @@ function photos_(d) {
   return json_({ ok: true });
 }
 
+
+// --- הגנה מפני שליחות מזויפות ("בדיקות" של המערכת) ---
+// מספר מומצא: ספרות חוזרות, רצף 1234567, או לא נייד/קווי ישראלי
+function fakePhone_(v) {
+  var d = String(v || '').replace(/\D/g, '').replace(/^972/, '0');
+  if (!/^05\d{8}$/.test(d) && !/^0[2-9]\d{7}$/.test(d)) return true;
+  return /(\d)\1{5,}/.test(d) || /1234567|2345678|3456789|9876543|0123456/.test(d) || /^(\d)\1*$/.test(d.slice(3));
+}
+// עד 3 שליחות לאותו טלפון ביממה (לכל סוג)
+function phoneQuotaOk_(kind, v) {
+  var d = String(v || '').replace(/\D/g, '').replace(/^972/, '0'); if (!d) return true;
+  var c = CacheService.getScriptCache(), k = 'q-' + kind + '-' + d, n = Number(c.get(k) || 0) + 1;
+  c.put(k, String(n), 21600); return n <= 3;
+}
+// רובוט: מילא את השדה הנסתר, או שלח מהר מדי (פחות מ־8 שניות במסך)
+function botLike_(d) { return !!(d && d.hp) || (d && typeof d.ms === 'number' && d.ms < 8000); }
+
 function doPost(e) {
   try {
     var body = (e && e.postData && e.postData.contents) || '';
@@ -424,6 +442,12 @@ function doPost(e) {
     if (d.kind === 'sketchReport') return sketchReport_(d);
     if (d.kind === 'sketchLab') return sketchLab_(d);
     if (!rateOk_()) return json_({ ok: false, error: 'busy' });
+    // שליחה של רובוט – מחזירים "הצליח" בלי לעשות כלום, כדי לא ללמד אותו מה נחסם
+    if ((d.kind === 'health' || d.kind === 'gift' || d.kind === 'photos') && botLike_(d)) return json_({ ok: true });
+    if (d.kind === 'health' || d.kind === 'gift') {
+      if (fakePhone_(d.phone)) return json_({ ok: false, error: 'bad phone' });
+      if (!phoneQuotaOk_(d.kind, d.phone)) return json_({ ok: false, error: 'too many' });
+    }
     if (d.kind === 'photos') return photos_(d);
     if (d.kind === 'gift') return giftCreate_(d);
     if (d.kind !== 'health') return json_({ ok: false, error: 'unknown kind' });

@@ -56,7 +56,11 @@ const validIsraeliId = (v) => {
   for (let i = 0; i < 9; i++) { let d = Number(p[i]) * ((i % 2) + 1); sum += d > 9 ? d - 9 : d; }
   return sum % 10 === 0;
 };
-const validPhone = (v) => /^(?:0|\+?972-?)5\d-?\d{3}-?\d{4}$|^0\d{1,2}-?\d{7}$/.test(String(v || '').replace(/\s/g, ''));
+// מספרים מומצאים (0501234567, 0500000000, 0555555555…) נדחים – הגנה מפני "בדיקות" של המערכת
+const fakePhone = (v) => { const d = String(v || '').replace(/\D/g, '').replace(/^972/, '0'); const t = d.slice(3); return /(\d)\1{5,}/.test(d) || /1234567|2345678|3456789|9876543|0123456/.test(d) || /^(\d)\1*$/.test(t); };
+const validPhone = (v) => /^(?:0|\+?972-?)5\d-?\d{3}-?\d{4}$|^0\d{1,2}-?\d{7}$/.test(String(v || '').replace(/\s/g, '')) && !fakePhone(v);
+// טביעה קטנה לכל שליחה: זמן מילוי ומלכודת רובוטים (השרת דוחה שליחה "מהירה מדי" או עם המלכודת מלאה)
+const FORM_T0 = Date.now();
 const announce = (msg) => { const l = $('#live'); l.textContent = ''; setTimeout(() => { l.textContent = msg; }, 50); };
 // צבעי היונק (רמה 2)
 const FEATHER = [
@@ -560,6 +564,7 @@ function watchInkQuotes(root) {
 }
 
 function render() {
+  window.__ttFormStart = Date.now();
   const [rawName, param] = location.hash.replace(/^#\/?/, '').split('/');
   const name = views[rawName] && (rawName !== 'sketch' || CONFIG.sketchEnabled) ? rawName : 'home';
   if (name === 'done' && param === 'health' && !state.lastHealth) { location.replace('#/health'); return; }
@@ -1281,6 +1286,8 @@ function alertErr(f, msg) {
 }
 function postJson(url, data) {
   // text/plain כדי לא להפעיל preflight מול Google Apps Script
+  const hp = document.getElementById('tt-hp');
+  if (data && typeof data === 'object' && !Array.isArray(data)) data = { ...data, hp: hp ? hp.value : '', ms: Date.now() - (window.__ttFormStart || FORM_T0) };
   return fetch(url, { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'text/plain;charset=utf-8' } })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r; });
 }
