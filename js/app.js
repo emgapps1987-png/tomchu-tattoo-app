@@ -37,6 +37,8 @@ if (isNative) {
     if (/^(https?:|tel:|mailto:)/.test(href)) { e.preventDefault(); location.href = href; }
   });
 }
+// בטלפון: מעבר ישיר לוואטסאפ באותו חלון (לא נחסם כמו חלון קופץ אחרי שליחה); במחשב: לשונית חדשה
+const goWa = (url) => { if (isNative || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) location.href = url; else window.open(url, '_blank', 'noopener'); };
 const waLink = (text) => `https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(text)}`;
 const fmtDate = (iso) => { if (!iso) return ''; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
 const nowStamp = () => new Date().toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' });
@@ -2004,12 +2006,11 @@ binders.tryon = () => {
     const ref = photoRef();
     const ok = await sendPhotosToTom([await shrinkImage(b, 1400, 0.82)], { what: 'tryon', ref });
     undo();
-    if (!ok) { download(b); showErr('התמונה נשמרה במכשיר. עכשיו נפתח וואטסאפ – צרפו אותה להודעה.'); setTimeout(() => openExternal(waLink('היי תום, ככה דמיינתי את הקעקוע 🙂')), 1800); return; }
+    if (!ok) { download(b); showErr('התמונה נשמרה במכשיר. עכשיו נפתח וואטסאפ – צרפו אותה להודעה.'); setTimeout(() => goWa(waLink('היי תום, ככה דמיינתי את הקעקוע 🙂')), 1800); return; }
     const link = waLink(`היי תום, שלחתי לך הדמיה של הקעקוע מהאפליקציה – מספר #${ref} 🙂`);
-    // גיבוי לאייפון: אם הדפדפן חסם את הפתיחה האוטומטית – כפתור ללחיצה
-    let box = $('#try-sent'); if (!box) { box = document.createElement('div'); box.id = 'try-sent'; box.className = 'stack'; box.style.gap = '8px'; btn.insertAdjacentElement('afterend', box); }
-    box.innerHTML = `<p class="muted" role="status" style="margin:0">ההדמיה נשלחה לתום ✓ (מספר #${ref})</p><a class="btn btn-wa" href="${link}" target="_blank" rel="noopener">להמשיך לוואטסאפ של תום</a>`;
-    openExternal(link);
+    let box = $('#try-sent'); if (!box) { box = document.createElement('p'); box.id = 'try-sent'; box.className = 'muted'; box.setAttribute('role', 'status'); box.style.cssText = 'margin:0;text-align:center'; btn.insertAdjacentElement('afterend', box); }
+    box.textContent = `ההדמיה נשלחה ✓ (מספר #${ref}) · פותחים את הוואטסאפ של תום…`;
+    goWa(link);
   });
 
 };
