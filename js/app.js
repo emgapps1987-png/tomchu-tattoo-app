@@ -123,6 +123,7 @@ views.home = () => `
   </div>
 
   ${promoCard()}
+  ${dreidelCard()}
 
   <a class="care-card" href="#/care">
     <span style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
@@ -391,6 +392,7 @@ views.article = (id) => {
 views.contact = () => `
 <form class="screen" id="contact-form" novalidate aria-labelledby="h" style="gap:16px">
   <div class="stack" style="gap:4px"><h1 id="h">פנייה לתום</h1><p class="muted">ספרו לי על הרעיון – אחזור אליכם בוואטסאפ.</p></div>
+  ${dreidelPrize() ? `<div class="dr-chip">🎁 <span>סביבון חנוכה: ${esc(dreidelPrize())}<br><small class="muted">ההטבה תצורף לפנייה · בתוקף עד 31.12</small></span></div>` : ''}
   <div class="field"><label for="c-name">שם מלא <span class="req" aria-hidden="true">*</span></label>
     <input id="c-name" name="name" class="fld" type="text" autocomplete="name" required aria-describedby="c-name-err"><span class="err" id="c-name-err"></span></div>
   <div class="field"><label for="c-phone">טלפון <span class="req" aria-hidden="true">*</span></label>
@@ -1028,7 +1030,8 @@ binders.contact = () => {
       'היי תום, פנייה חדשה מהאפליקציה',
       `שם: ${v.name.trim()}`, `טלפון: ${v.phone.trim()}`, `סוג פנייה: ${v.type}`,
       `הרעיון: ${v.idea.trim()}`,
-      v.place ? `מיקום בגוף: ${v.place}` : '', `גודל משוער: ${v.size}`, `מתי נוח: ${v.when}`
+      v.place ? `מיקום בגוף: ${v.place}` : '', `גודל משוער: ${v.size}`, `מתי נוח: ${v.when}`,
+      dreidelPrize() ? `🎁 זכיתי בסביבון חנוכה: ${dreidelPrize()}` : ''
     ].filter(Boolean).join('\n');
     state.lastContactText = text;
     const files = Array.from(f.elements.files.files || []);
@@ -2259,3 +2262,25 @@ if (!isNative && 'serviceWorker' in navigator && location.protocol === 'https:')
     } catch (e) {}
   }, push.webInit ? 25000 : 0));
 }
+
+
+// =====================================================================
+// סביבון חנוכה (4.12–12.12) · אותו מודול כמו באתר
+// =====================================================================
+const DR_PRIZES = ['20% הנחה', '30% הנחה', '40% הנחה', 'קעקוע שני מתנה'];
+function dreidelOn() { const t = todayIso(); return t >= '2026-12-04' && t <= '2026-12-12'; }
+function dreidelPrize() { if (todayIso() > '2026-12-31') return ''; try { const v = JSON.parse(localStorage.getItem('tt-dreidel-26') || 'null'); return v && DR_PRIZES[v.k] || ''; } catch (e) { return ''; } }
+function dreidelCard() {
+  if (!dreidelOn()) return '';
+  const won = dreidelPrize();
+  return `<button type="button" class="dr-card" data-dreidel><span class="dr-ic" aria-hidden="true">🕎</span><span><b>${won ? 'זכית בסביבון: ' + esc(won) : 'סביבון חנוכה של Tomchu'}</b><small>${won ? 'לקביעת תור עם ההטבה' : 'מסובבים פעם אחת וזוכים בהטבה'}</small></span></button>`;
+}
+let drLoad = null;
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('[data-dreidel]')) return;
+  if (dreidelPrize()) { location.hash = '#/contact'; return; }
+  window.TT_DREIDEL = { noBar: true, api: CONFIG.healthEndpoint || '', live: !!CONFIG.healthEndpoint, logo: 'assets/img/logo-ink.png',
+    book: (label, tel) => { state.contact = Object.assign(state.contact || {}, { phone: state.contact?.phone || tel }); location.hash = '#/contact'; } };
+  drLoad = drLoad || import('./dreidel/dreidel.js');
+  drLoad.then(() => window.ttDreidelOpen && window.ttDreidelOpen()).catch(() => {});
+});
