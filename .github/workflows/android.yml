@@ -46,9 +46,9 @@ jobs:
         run: |
           D=android/app/src/main/java/com/tomchutattoo/app
           test -f $D/MainActivity.java
-          cp native/android/MainActivity.java native/android/WaSharePlugin.java $D/
+          cp native/android-src/MainActivity.java native/android-src/WaSharePlugin.java $D/
           mkdir -p android/app/src/main/res/xml
-          cp native/android/file_paths.xml android/app/src/main/res/xml/file_paths.xml
+          cp native/android-src/file_paths.xml android/app/src/main/res/xml/file_paths.xml
           grep -n "fileprovider" android/app/src/main/AndroidManifest.xml
 
       # הקשחת אבטחה: בלי גיבוי/העתקת נתונים מהמכשיר, רק חיבורים מוצפנים, ובלי הרשאות מיותרות
